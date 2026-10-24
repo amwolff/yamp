@@ -1,0 +1,37 @@
+{{define "content"}}
+{{template "admin-nav" .Nav}}
+<section class="panel">
+  <div class="panel-head">
+    <h2>Jobs</h2>
+    <form method="post" action="/admin/enqueue"><button class="btn btn-ghost btn-small">Apply profile policies now</button></form>
+  </div>
+  <div hx-ext="sse" sse-connect="/admin/events">
+    <div id="jobs" hx-get="/admin/jobs/table" hx-trigger="sse:jobs throttle:1s">{{template "jobs-table" .Data}}</div>
+  </div>
+</section>
+{{end}}
+
+{{define "jobs-table"}}
+{{if not .}}<p class="empty">There are no jobs.</p>{{else}}
+<div class="table-wrap"><table class="table">
+  <thead><tr><th class="col-name">Video</th><th>Profile</th><th>State</th><th>Progress</th><th class="hide-sm">Added</th><th></th></tr></thead>
+  <tbody>
+  {{range .}}<tr>
+    <td class="col-name"><a class="name" href="/v/{{.MediaPid}}">{{.MediaTitle}}</a><div class="pid small">{{.MediaPid}}</div></td>
+    <td>{{.ProfileName}}</td>
+    <td><span class="state state-{{.State}}">{{.State}}</span>{{with .Live}}<div class="muted small">{{.Encoder}}{{if eq .Phase "finalize"}} · finishing{{end}}</div>{{end}}</td>
+    <td>
+      {{if .Live}}<div class="progress-row"><progress max="100" value="{{percent .Live.Progress}}"></progress><span>{{percent .Live.Progress}}%{{with .Live.Speed}} · {{printf "%.1f" .}}×{{end}}</span></div>
+      {{else if eq .State "done"}}100%{{end}}
+      {{if .Error}}<details class="err"><summary>Error</summary><pre>{{.Error}}</pre></details>{{end}}
+    </td>
+    <td class="small muted hide-sm">{{ago .CreatedAt}}</td>
+    <td>
+      {{if .Active}}<form method="post" action="/admin/jobs/{{.ID}}/cancel"><button class="btn btn-ghost btn-small">Cancel</button></form>
+      {{else if ne .State "done"}}<form method="post" action="/admin/jobs/{{.ID}}/retry"><button class="btn btn-ghost btn-small">Retry</button></form>{{end}}
+    </td>
+  </tr>{{end}}
+  </tbody>
+</table></div>
+{{end}}
+{{end}}

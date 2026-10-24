@@ -1,0 +1,6 @@
+.git
+.yamp
+.playwright-cli
+testdata/lib
+yamp
+*.log

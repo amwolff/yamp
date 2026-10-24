@@ -1,0 +1,30 @@
+# YAMP on a Linux host with an Intel iGPU, behind `tailscale serve`.
+#
+#   RENDER_GID=$(getent group render | cut -d: -f3) docker compose -f deploy/compose.yaml up -d --build
+#   tailscale serve --bg 8080
+#
+# Change the three host paths below. The library is mounted read-only.
+services:
+  yamp:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: yamp:latest
+    restart: unless-stopped
+    # Publish only on the loopback interface: tailscale serve adds HTTPS in
+    # front of it.
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      YAMP_LIBRARY: /media
+      # YAMP_FSYNC: "true"  # only for file systems without ordered writes
+    volumes:
+      - /tank/media:/media:ro
+      - /tank/yamp/data:/data
+      - /tank/yamp/cache:/cache
+    # The host directories must be writable by this user.
+    user: "${YAMP_UID:-10001}:${YAMP_GID:-10001}"
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    group_add:
+      - "${RENDER_GID:-993}"

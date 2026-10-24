@@ -1,0 +1,36 @@
+{{define "content"}}
+{{template "admin-nav" .Nav}}
+{{with .Data}}
+<div class="tiles">
+  <div class="tile"><span class="tile-label">Videos</span><span class="tile-value">{{.Library.Videos}}</span></div>
+  <div class="tile"><span class="tile-label">Total length</span><span class="tile-value">{{hours .Library.DurationMs}}</span></div>
+  <div class="tile"><span class="tile-label">Library size</span><span class="tile-value">{{bytes .Library.Size}}</span></div>
+  <div class="tile"><span class="tile-label">Views</span><span class="tile-value">{{.Plays.Views}}</span></div>
+  <div class="tile"><span class="tile-label">Watch time</span><span class="tile-value">{{hours .Plays.WatchedMs}}</span></div>
+  <div class="tile"><span class="tile-label">Transcoded files</span><span class="tile-value">{{bytes .Renditions}}</span></div>
+  {{if .CacheFreeOK}}<div class="tile"><span class="tile-label">Free in cache</span><span class="tile-value">{{bytes .CacheFree}}</span></div>{{end}}
+</div>
+
+<div class="admin-grid">
+  <section class="panel">
+    <h2>Most viewed</h2>
+    {{if .TopViewed}}<ol class="ranked">{{range .TopViewed}}<li><a class="name" href="/v/{{.Pid}}">{{.Title}}</a><span class="muted">{{.Views}}</span></li>{{end}}</ol>
+    {{else}}<p class="muted">No views yet. A play counts after 60 s or a quarter of the video.</p>{{end}}
+  </section>
+  <section class="panel">
+    <h2>Highest rated</h2>
+    {{if .TopRated}}<ol class="ranked">{{range .TopRated}}<li><a class="name" href="/v/{{.Pid}}">{{.Title}}</a><span class="stars-mini">{{printf "%.1f" .Stars}} &#9733;</span></li>{{end}}</ol>
+    {{else}}<p class="muted">No ratings yet.</p>{{end}}
+  </section>
+  <section class="panel">
+    <h2>Playback classes</h2>
+    <table class="table compact"><tbody>{{range .Classes}}<tr><td><span class="state state-{{.Playability}}">{{.Playability}}</span></td><td class="num">{{.N}}</td></tr>{{end}}</tbody></table>
+  </section>
+  <section class="panel">
+    <h2>Jobs</h2>
+    {{if .JobsByState}}<table class="table compact"><tbody>{{range .JobsByState}}<tr><td><span class="state state-{{.State}}">{{.State}}</span></td><td class="num">{{.N}}</td></tr>{{end}}</tbody></table>
+    {{else}}<p class="muted">No jobs.</p>{{end}}
+  </section>
+</div>
+{{end}}
+{{end}}

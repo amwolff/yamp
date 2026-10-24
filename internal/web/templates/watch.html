@@ -1,0 +1,87 @@
+{{define "content"}}{{with .Data}}
+<div class="watch">
+  <div class="player">
+    <video id="player" controls playsinline preload="metadata"
+           data-pid="{{.Media.Pid}}" data-resume="{{.ResumeMs}}" data-duration="{{.Media.DurationMs}}"
+           {{if .Media.HasThumb}}poster="/thumb/{{.Media.Pid}}"{{end}}>
+      {{range .Sources}}<source src="{{.URL}}" type="{{.Type}}" data-label="{{.Label}}">
+      {{end}}{{range .Subtitles}}<track kind="subtitles" src="/media/{{$.Data.Media.Pid}}/subs/{{.ID}}.vtt" label="{{.Label}}"{{with .Lang}} srclang="{{.}}"{{end}}>
+      {{end}}
+    </video>
+    <div class="unplayable" id="unplayable"{{if .Sources}} hidden{{end}}>
+      <p><strong>This video cannot play on this device yet.</strong></p>
+      <p class="muted">The browser cannot decode the original file and there is no compatible version.</p>
+      {{template "transcode-form" .}}
+    </div>
+  </div>
+
+  <section class="watch-info">
+    <div class="watch-head">
+      <h1 class="watch-title">{{.Media.Title}}</h1>
+      {{template "rating" .Rating}}
+    </div>
+    <div class="watch-meta">
+      <span>{{duration .Media.DurationMs}}</span>
+      {{with resolution .Media.Width .Media.Height}}<span>{{.}}</span>{{end}}
+      <span>{{.Views}} {{if eq .Views 1}}view{{else}}views{{end}}</span>
+      <span id="source-label" class="muted"></span>
+      <code class="pid-chip" title="Public ID">{{.Media.Pid}}</code>
+    </div>
+
+    {{template "watch-status" .Status}}
+
+    <details class="panel details">
+      <summary>Technical details and versions</summary>
+      <dl class="kv">
+        <dt>Size</dt><dd>{{bytes .Media.Size}}</dd>
+        <dt>Container</dt><dd>{{.Media.Container}}</dd>
+        <dt>Video</dt><dd>{{.Media.VideoCodec}} {{.Media.Width}}×{{.Media.Height}}{{if .Media.Hdr}} HDR{{end}}</dd>
+        <dt>Audio</dt><dd>{{with .Media.AudioCodec}}{{.}}{{else}}none{{end}}</dd>
+        <dt>Codecs</dt><dd><code>{{with .Media.Codecs}}{{.}}{{else}}—{{end}}</code></dd>
+        <dt>Playback</dt><dd><span class="state state-{{.Media.Playability}}">{{.Media.Playability}}</span> <span class="muted small">{{classHelp .Media.Playability}}</span></dd>
+      </dl>
+      {{if .Renditions}}
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Version</th><th>Resolution</th><th>Codecs</th><th>Size</th></tr></thead>
+        <tbody>
+        {{range .Renditions}}<tr>
+          <td>{{.ProfileName}}{{if .Stale}} <span class="state state-stale" title="The profile changed after this transcode">stale</span>{{end}}</td>
+          <td>{{.Width}}×{{.Height}}</td><td><code>{{.Codecs}}</code></td><td>{{bytes .Size}}</td>
+        </tr>{{end}}
+        </tbody>
+      </table></div>
+      {{else}}<p class="muted">There are no transcoded versions.</p>{{end}}
+      {{template "transcode-form" .}}
+    </details>
+  </section>
+</div>
+{{end}}{{end}}
+
+{{define "transcode-form"}}
+<form class="inline-form" method="post" action="/admin/media/{{.Media.Pid}}/transcode">
+  <label class="sr-only" for="profile-{{.Media.Pid}}">Profile</label>
+  <select name="profile" id="profile-{{.Media.Pid}}">
+    {{range .Profiles}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+  </select>
+  <button class="btn">Transcode now</button>
+</form>
+{{end}}
+
+{{define "rating"}}
+<form class="rating" method="post" action="/api/rating/{{.PID}}" hx-post="/api/rating/{{.PID}}" hx-swap="outerHTML" aria-label="Your rating">
+  {{range $i, $on := stars .Stars}}{{$n := add $i 1}}<button name="stars" value="{{if eq $n $.Stars}}0{{else}}{{$n}}{{end}}" class="star{{if $on}} on{{end}}" title="{{if eq $n $.Stars}}Remove rating{{else}}{{$n}} of 5{{end}}">&#9733;</button>{{end}}
+</form>
+{{end}}
+
+{{define "watch-status"}}
+<div class="job-status"{{if .Polling}} hx-get="/v/{{.PID}}/status" hx-trigger="every 2s" hx-swap="outerHTML"{{end}}>
+  {{with .Active}}
+  <div class="notice">
+    <div><strong>{{if eq .State "queued"}}Waiting in the queue{{else if eq .Phase "finalize"}}Finishing the file{{else}}Transcoding{{end}}</strong> · {{.Profile}}{{with .Encoder}} · {{.}}{{end}}</div>
+    {{if eq .State "running"}}<div class="progress-row"><progress max="100" value="{{percent .Progress}}"></progress><span>{{percent .Progress}}%{{with .Speed}} · {{printf "%.1f" .}}×{{end}}</span></div>{{end}}
+  </div>
+  {{end}}
+  {{if .Ready}}<div class="notice notice-ok">A new version is ready. <a href="/v/{{.PID}}">Reload the page</a> to play it.</div>{{end}}
+  {{if not .Active}}{{with .Last}}{{if eq .State "failed"}}<div class="notice notice-err">The last transcode failed. <a href="/admin/jobs">Open the job list</a> for the error.</div>{{end}}{{end}}{{end}}
+</div>
+{{end}}

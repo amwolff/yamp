@@ -1,0 +1,37 @@
+{{define "logo"}}<svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" class="logo-bg"/><path d="M12 9.5v13l10.5-6.5z" class="logo-fg"/></svg>{{end}}
+{{define "icon-search"}}<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>{{end}}
+{{define "icon-folder"}}<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>{{end}}
+{{define "icon-film"}}<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>{{end}}
+{{define "icon-eye"}}<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>{{end}}
+{{define "icon-logout"}}<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg>{{end}}
+
+{{define "cards"}}
+{{range .Items}}
+<a class="card" href="/v/{{.PID}}">
+  <div class="thumb">
+    {{if .HasThumb}}<img src="/thumb/{{.PID}}" alt="" loading="lazy" decoding="async">{{else}}<div class="thumb-empty">{{template "icon-film"}}</div>{{end}}
+    {{if .DurationMs}}<span class="badge">{{duration .DurationMs}}</span>{{end}}
+    {{if .Completed}}<span class="badge badge-done" title="Watched">&#10003;</span>{{end}}
+    {{if and .PositionMs (not .Completed)}}<progress class="resume" max="{{.DurationMs}}" value="{{.PositionMs}}"></progress>{{end}}
+  </div>
+  <div class="card-body">
+    <span class="title">{{.Title}}</span>
+    <span class="pid">{{.PID}}</span>
+    <span class="card-meta">{{with resolution .Width .Height}}<span>{{.}}</span>{{end}}{{if .Stars}}<span class="stars-mini" aria-label="{{.Stars}} stars">{{range stars .Stars}}{{if .}}&#9733;{{end}}{{end}}</span>{{end}}{{if .Views}}<span>{{.Views}} {{if eq .Views 1}}view{{else}}views{{end}}</span>{{end}}</span>
+  </div>
+</a>
+{{end}}
+{{if .Next}}<div class="sentinel" hx-get="{{.Next}}" hx-trigger="revealed" hx-swap="outerHTML"><span class="spinner" aria-label="Loading"></span></div>{{end}}
+{{if and .ShowEmpty (not .Items) (eq .Offset 0)}}<p class="empty">No videos match.</p>{{end}}
+{{end}}
+
+{{define "admin-nav"}}
+<nav class="tabs" aria-label="Admin">
+  <a href="/admin/library"{{if eq . "library"}} aria-current="page"{{end}}>Library</a>
+  <a href="/admin/transcoding"{{if eq . "transcoding"}} aria-current="page"{{end}}>Transcoding</a>
+  <a href="/admin/jobs"{{if eq . "jobs"}} aria-current="page"{{end}}>Jobs</a>
+  <a href="/admin/stats"{{if eq . "stats"}} aria-current="page"{{end}}>Statistics</a>
+  <a href="/admin/users"{{if eq . "users"}} aria-current="page"{{end}}>Users</a>
+  <a href="/admin/privacy"{{if eq . "privacy"}} aria-current="page"{{end}}>Privacy</a>
+</nav>
+{{end}}

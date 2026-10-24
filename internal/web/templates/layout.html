@@ -1,0 +1,40 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0d0f13" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+<meta name="htmx-config" content='{"includeIndicatorStyles":false,"allowEval":false,"allowScriptTags":false,"historyCacheSize":0,"selfRequestsOnly":true}'>
+<title>{{.Title}}</title>
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/app.css?v={{.Version}}">
+<script src="/static/vendor/htmx.min.js?v={{.Version}}" defer></script>
+<script src="/static/vendor/htmx-sse.js?v={{.Version}}" defer></script>
+<script src="/static/app.js?v={{.Version}}" defer></script>
+{{if eq .Nav "watch"}}<script src="/static/player.js?v={{.Version}}" defer></script>{{end}}
+</head>
+<body class="{{if and .User .User.Discreet}}discreet{{end}}">
+{{if .User}}
+<header class="topbar">
+  <a class="brand" href="/" aria-label="YAMP home">{{template "logo"}}<span>YAMP</span></a>
+  <nav class="topnav" aria-label="Main">
+    <a href="/"{{if eq .Nav "home"}} aria-current="page"{{end}}>Library</a>
+    <a href="/admin"{{if isAdmin .Nav}} aria-current="page"{{end}}>Admin</a>
+  </nav>
+  <div class="topbar-actions">
+    {{if .User.Discreet}}<button type="button" class="icon-btn" data-reveal aria-pressed="false" title="Show names">{{template "icon-eye"}}</button>{{end}}
+    <form method="post" action="/logout"><button class="icon-btn" title="Log out ({{.User.Username}})">{{template "icon-logout"}}</button></form>
+  </div>
+</header>
+{{end}}
+<main class="container">
+{{if .User}}{{if .Flash}}<div class="flash" role="status">{{.Flash}}</div>{{end}}{{if .Error}}<div class="alert" role="alert">{{.Error}}</div>{{end}}{{end}}
+{{template "content" .}}
+</main>
+</body>
+</html>
+{{end}}

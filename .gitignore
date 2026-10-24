@@ -31,3 +31,10 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# YAMP local data
+/testdata/lib/
+/.yamp/
+/yamp
+/.yamp.log
+/.playwright-cli/

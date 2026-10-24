@@ -1,0 +1,43 @@
+{{define "content"}}{{with .Data}}
+<section class="toolbar">
+  <nav class="crumbs" aria-label="Folders">
+    <a href="/?sort={{.Sort}}">Library</a>
+    {{range .Crumbs}}<span class="sep" aria-hidden="true">/</span><a class="crumb" href="/?d={{.ID}}&amp;sort={{$.Data.Sort}}">{{.Name}}</a>{{end}}
+  </nav>
+  <form class="filters" action="/" method="get" role="search"
+        hx-get="/grid" hx-target="#grid"
+        hx-trigger="submit, change from:select, keyup changed delay:300ms from:input[name='q'], search from:input[name='q']">
+    <input type="hidden" name="d" value="{{.Folder.ID}}">
+    <label class="search">{{template "icon-search"}}<input type="search" name="q" value="{{.Search}}" placeholder="Search titles" aria-label="Search titles" autocomplete="off" enterkeyhint="search"></label>
+    <select name="sort" aria-label="Sort">
+      {{range .SortOptions}}<option value="{{.Value}}"{{if eq .Value $.Data.Sort}} selected{{end}}>{{.Label}}</option>{{end}}
+    </select>
+  </form>
+</section>
+
+{{if .Folders}}
+<div class="folders">
+  {{range .Folders}}<a class="chip" href="/?d={{.ID}}&amp;sort={{$.Data.Sort}}">{{template "icon-folder"}}<span class="chip-name">{{.Name}}</span></a>{{end}}
+</div>
+{{end}}
+
+{{if .Continue.Items}}
+<section class="shelf">
+  <h2>Continue watching</h2>
+  <div class="grid grid-row">{{template "cards" .Continue}}</div>
+</section>
+{{end}}
+
+{{if .Empty}}
+<div class="empty-state">
+  {{template "icon-film"}}
+  <h2>No videos here yet</h2>
+  <p>YAMP shows the videos in the library roots. Start a scan in <a href="/admin/library">Admin → Library</a>.</p>
+</div>
+{{else}}
+<section class="shelf">
+  {{if or .Continue.Items .Folders}}<h2>{{if .Folder.ID}}{{.Folder.Name}}{{else}}All videos{{end}}</h2>{{end}}
+  <div id="grid" class="grid">{{template "cards" .Cards}}</div>
+</section>
+{{end}}
+{{end}}{{end}}

@@ -1,0 +1,17 @@
+{{define "content"}}
+<div class="auth">
+  <div class="auth-card">
+    <div class="auth-brand">{{template "logo"}}<span>YAMP</span></div>
+    <h1>{{if .Data.Setup}}Create the first account{{else}}Sign in{{end}}</h1>
+    {{if .Data.Setup}}<p class="muted">All accounts are administrators. You can add more accounts later.</p>{{end}}
+    {{if .Error}}<div class="alert" role="alert">{{.Error}}</div>{{end}}
+    <form method="post" action="{{if .Data.Setup}}/setup{{else}}/login{{end}}" class="stack">
+      <label>Username<input name="username" autocomplete="username" required autofocus maxlength="64" value="{{.Data.Username}}"></label>
+      <label>Password<input type="password" name="password" required
+        autocomplete="{{if .Data.Setup}}new-password{{else}}current-password{{end}}"{{if .Data.Setup}} minlength="8"{{end}}></label>
+      {{if .Data.Setup}}<label>Repeat the password<input type="password" name="password2" autocomplete="new-password" required minlength="8"></label>{{end}}
+      <button class="btn btn-block">{{if .Data.Setup}}Create account{{else}}Sign in{{end}}</button>
+    </form>
+  </div>
+</div>
+{{end}}
