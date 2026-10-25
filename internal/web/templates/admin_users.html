@@ -1,32 +1,38 @@
 {{define "content"}}
 {{template "admin-nav" .Nav}}
 {{with .Data}}
-<div class="admin-grid">
-  <section class="panel wide">
-    <h2>Users</h2>
-    <p class="muted small">All users are administrators.</p>
-    <div class="table-wrap"><table class="table">
-      <thead><tr><th>Name</th><th>Added</th><th>New password</th><th></th></tr></thead>
-      <tbody>
-      {{range .Users}}<tr>
-        <td>{{.Username}}{{if eq .ID $.Data.Me}} <span class="muted small">(you)</span>{{end}}</td>
-        <td class="small muted">{{(unix .CreatedAt).Format "2006-01-02"}}</td>
-        <td><form method="post" action="/admin/users/{{.ID}}/password" class="inline-form">
-          <input type="password" name="password" minlength="8" required autocomplete="new-password" aria-label="New password for {{.Username}}">
-          <button class="btn btn-ghost btn-small">Change</button></form></td>
-        <td><form method="post" action="/admin/users/{{.ID}}/delete" data-confirm="Delete the user {{.Username}}?"><button class="btn btn-danger btn-small">Delete</button></form></td>
-      </tr>{{end}}
-      </tbody>
-    </table></div>
-  </section>
-  <section class="panel">
-    <h2>Add a user</h2>
-    <form method="post" action="/admin/users" class="stack">
-      <label>Username<input name="username" required maxlength="64" autocomplete="off"></label>
-      <label>Password<input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
-      <button class="btn">Add user</button>
-    </form>
-  </section>
-</div>
+<section class="panel">
+  <h2>Users</h2>
+  <p class="muted small">All users are administrators.</p>
+  {{/* Forms cannot wrap table rows, so the controls join them by id. */}}
+  {{range .Users}}
+  <form id="password-{{.ID}}" method="post" action="/admin/users/{{.ID}}/password"></form>
+  <form id="delete-{{.ID}}" method="post" action="/admin/users/{{.ID}}/delete" data-confirm="Delete the user {{.Username}}?"></form>
+  {{end}}
+  <form id="add-user" method="post" action="/admin/users"></form>
+  <div class="table-wrap"><table class="table users-table">
+    <thead><tr><th>Name</th><th>Added</th><th>Password</th><th></th></tr></thead>
+    <tbody>
+    {{range .Users}}<tr>
+      <td class="user-name">{{.Username}}{{if eq .ID $.Data.Me}} <span class="muted small">(you)</span>{{end}}</td>
+      <td class="user-added small muted">{{(unix .CreatedAt).Format "2006-01-02"}}</td>
+      <td class="user-password"><input form="password-{{.ID}}" type="password" name="password" minlength="8" required
+        autocomplete="new-password" placeholder="New password" aria-label="New password for {{.Username}}"></td>
+      <td class="user-actions">
+        <button form="password-{{.ID}}" class="btn btn-ghost">Change</button>
+        <button form="delete-{{.ID}}" class="btn btn-danger">Delete</button>
+      </td>
+    </tr>{{end}}
+    <tr class="add-row">
+      <td class="user-name"><input form="add-user" name="username" required maxlength="64" autocomplete="off"
+        placeholder="New user" aria-label="Name of the new user" value="{{.NewName}}"></td>
+      <td class="user-added"></td>
+      <td class="user-password"><input form="add-user" type="password" name="password" required minlength="8"
+        autocomplete="new-password" placeholder="Password" aria-label="Password of the new user"></td>
+      <td class="user-actions"><button form="add-user" class="btn">Add user</button></td>
+    </tr>
+    </tbody>
+  </table></div>
+</section>
 {{end}}
 {{end}}

@@ -357,10 +357,16 @@ progress.resume::-moz-progress-bar { background: #ff4d4d; border-radius: 0; }
 .table tr:last-child td { border-bottom: 0; }
 .table.compact td { padding: 6px 8px; }
 .table form { margin: 0; }
-.table .inline-form { margin: 0; flex-wrap: nowrap; }
-.table .inline-form input { min-width: 140px; }
 .table a.name { font-weight: 550; overflow-wrap: anywhere; }
 .table .col-name { min-width: 150px; }
+
+/* Users: text and controls share one row height. */
+.users-table td { vertical-align: middle; }
+.users-table .user-name { width: 30%; overflow-wrap: anywhere; }
+.users-table .user-added { white-space: nowrap; }
+.users-table .user-password input { min-width: 160px; }
+.users-table .user-actions { width: 1%; white-space: nowrap; }
+.users-table .user-actions .btn + .btn { margin-left: 8px; }
 
 .state {
   display: inline-block; padding: 1px 8px; border-radius: 999px;
@@ -430,6 +436,22 @@ ul.plain { list-style: none; padding: 0; margin: 0 0 8px; }
   .panel { padding: 14px; }
   .kv { grid-template-columns: 1fr; gap: 0; }
   .hide-sm { display: none; }
+  /* Users: each row becomes a card (name and date, password, buttons). */
+  .users-table thead { display: none; }
+  .users-table, .users-table tbody { display: block; }
+  .users-table tr {
+    display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .users-table tr:last-child { border-bottom: 0; }
+  .users-table td { display: block; padding: 0; border: 0; }
+  .users-table .user-name, .users-table .user-actions { width: auto; }
+  .users-table .user-password, .users-table .user-actions, .users-table .add-row .user-name { grid-column: 1 / -1; }
+  .users-table .user-password input { min-width: 0; }
+  .users-table .user-actions { display: flex; gap: 8px; }
+  .users-table .user-actions .btn { flex: 1; }
+  .users-table .user-actions .btn + .btn { margin-left: 0; }
+  .users-table .add-row .user-added { display: none; }
   .kv dd { margin-bottom: 8px; }
 }
 

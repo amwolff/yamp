@@ -399,21 +399,23 @@ func (s *Server) handleAdminStats(w http.ResponseWriter, r *http.Request) {
 type usersData struct {
 	Users []db.User
 	Me    int64
+	// NewName refills the new-user row after a failed add.
+	NewName string
 }
 
-func (s *Server) usersPage(w http.ResponseWriter, r *http.Request, status int, errMsg string) {
+func (s *Server) usersPage(w http.ResponseWriter, r *http.Request, status int, errMsg, newName string) {
 	users, err := s.Store.ListUsers(r.Context())
 	if err != nil {
 		s.serverError(w, r, err)
 		return
 	}
-	p := s.newPage(r, "Admin - YAMP", "users", usersData{Users: users, Me: auth.UserFrom(r.Context()).ID})
+	p := s.newPage(r, "Admin - YAMP", "users", usersData{Users: users, Me: auth.UserFrom(r.Context()).ID, NewName: newName})
 	p.Error = errMsg
 	s.render(w, r, status, "admin_users", p)
 }
 
 func (s *Server) handleAdminUsers(w http.ResponseWriter, r *http.Request) {
-	s.usersPage(w, r, http.StatusOK, "")
+	s.usersPage(w, r, http.StatusOK, "", "")
 }
 
 func (s *Server) handleUserCreate(w http.ResponseWriter, r *http.Request) {
@@ -422,7 +424,7 @@ func (s *Server) handleUserCreate(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(msg, "UNIQUE") {
 			msg = "A user with this name already exists."
 		}
-		s.usersPage(w, r, http.StatusBadRequest, msg)
+		s.usersPage(w, r, http.StatusBadRequest, msg, r.PostFormValue("username"))
 		return
 	}
 	s.redirectFlash(w, r, "/admin/users", "The user was added.")
@@ -441,7 +443,7 @@ func (s *Server) handleUserPassword(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err := s.Auth.SetPassword(r.Context(), id, r.PostFormValue("password"), keep); err != nil {
-		s.usersPage(w, r, http.StatusBadRequest, err.Error())
+		s.usersPage(w, r, http.StatusBadRequest, err.Error(), "")
 		return
 	}
 	s.redirectFlash(w, r, "/admin/users", "The password was changed. Other sessions of this user ended.")
@@ -459,7 +461,7 @@ func (s *Server) handleUserDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if n <= 1 {
-		s.usersPage(w, r, http.StatusBadRequest, "You cannot delete the last user.")
+		s.usersPage(w, r, http.StatusBadRequest, "You cannot delete the last user.", "")
 		return
 	}
 	if err := s.Store.DeleteUser(r.Context(), id); err != nil {

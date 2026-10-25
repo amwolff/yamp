@@ -398,3 +398,20 @@ func TestLocalPath(t *testing.T) {
 		}
 	}
 }
+
+func TestAddUserErrorKeepsName(t *testing.T) {
+	ts := newTestServer(t)
+	ts.setup(t)
+	resp, body := ts.do(t, "POST", "/admin/users", url.Values{"username": {"carol"}, "password": {"short"}})
+	if resp.StatusCode != http.StatusBadRequest || !strings.Contains(body, `value="carol"`) {
+		t.Fatalf("failed add: %d, name kept: %v", resp.StatusCode, strings.Contains(body, `value="carol"`))
+	}
+	resp, _ = ts.do(t, "POST", "/admin/users", url.Values{"username": {"carol"}, "password": {"password123"}})
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("add: %d", resp.StatusCode)
+	}
+	_, body = ts.do(t, "GET", "/admin/users", nil)
+	if !strings.Contains(body, `form="delete-`) || !strings.Contains(body, ">carol<") {
+		t.Fatal("new user row missing")
+	}
+}
