@@ -327,6 +327,7 @@ func (s *Scanner) scanFile(ctx context.Context, f file, salt string,
 		audioCodec = a.Audio.CodecName
 	}
 	pid := privacy.PID(salt, fp)
+	w, h := a.Video.DisplaySize()
 	var id int64
 	if known {
 		// The content at this path changed: drop the old derived files.
@@ -337,7 +338,7 @@ func (s *Scanner) scanFile(ctx context.Context, f file, salt string,
 		err = s.cfg.Store.UpdateMediaContent(ctx, db.UpdateMediaContentParams{
 			Path: f.path, Root: f.root, RelDir: f.relDir, Title: Title(f.path), Size: f.size, MtimeNs: f.mtime,
 			Fingerprint: fp, Pid: pid, DurationMs: res.Duration().Milliseconds(), Container: a.Container,
-			Width: int64(a.Video.Width), Height: int64(a.Video.Height), VideoCodec: a.Video.CodecName,
+			Width: int64(w), Height: int64(h), VideoCodec: a.Video.CodecName,
 			AudioCodec: audioCodec, Mime: a.Mime, Codecs: a.Codecs, Hdr: boolInt(a.HDR),
 			Playability: string(a.Class), ProbeJson: string(raw), UpdatedAt: now, ID: id,
 		})
@@ -346,7 +347,7 @@ func (s *Scanner) scanFile(ctx context.Context, f file, salt string,
 		id, err = s.cfg.Store.InsertMedia(ctx, db.InsertMediaParams{
 			Path: f.path, Root: f.root, RelDir: f.relDir, Title: Title(f.path), Size: f.size, MtimeNs: f.mtime,
 			Fingerprint: fp, Pid: pid, DurationMs: res.Duration().Milliseconds(), Container: a.Container,
-			Width: int64(a.Video.Width), Height: int64(a.Video.Height), VideoCodec: a.Video.CodecName,
+			Width: int64(w), Height: int64(h), VideoCodec: a.Video.CodecName,
 			AudioCodec: audioCodec, Mime: a.Mime, Codecs: a.Codecs, Hdr: boolInt(a.HDR),
 			Playability: string(a.Class), ProbeJson: string(raw), AddedAt: now, UpdatedAt: now,
 		})

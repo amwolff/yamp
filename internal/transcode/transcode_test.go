@@ -140,6 +140,7 @@ const prefix = "-nostdin -hide_banner -loglevel error -nostats -stats_period 1 -
 
 func TestBuildArgsGolden(t *testing.T) {
 	compat := preset(compatName)
+	mobile := preset(mobileName)
 	hevc := preset(hevcName)
 	apple := preset(appleName)
 	tests := []struct {
@@ -172,6 +173,18 @@ func TestBuildArgsGolden(t *testing.T) {
 				"-c:v libx264 -preset medium -crf 21 -profile:v high -level:v 4.1 -maxrate 8000k -bufsize 16000k " +
 				"-force_key_frames expr:gte(t,n_forced*2) -sc_threshold 0 " +
 				"-c:a aac -b:a 160k -ac 2 -movflags +faststart -f mp4 OUT",
+			encoder: "libx264",
+		},
+		{
+			name: "rotated 1080p h264 to portrait 720p",
+			in: Input{Probe: result(stream("h264", func(s *probe.Stream) {
+				s.SideData = []probe.SideData{{Type: "Display Matrix", Rotation: -90}}
+			}), stream("aac")), Params: mobile, Encoder: "libx264"},
+			want: prefix + "-i IN -map 0:0 -map 0:1 -map_metadata -1 -map_chapters -1 -sn -dn " +
+				"-vf scale=720:1280,format=yuv420p " +
+				"-c:v libx264 -preset medium -crf 23 -profile:v high -level:v 3.1 -maxrate 3000k -bufsize 6000k " +
+				"-force_key_frames expr:gte(t,n_forced*2) -sc_threshold 0 " +
+				"-c:a copy -movflags +faststart -f mp4 OUT",
 			encoder: "libx264",
 		},
 		{
@@ -272,6 +285,10 @@ func TestCopyDecisions(t *testing.T) {
 	}{
 		{"compatible 1080p", stream("h264"), compat, true},
 		{"too tall for mobile", stream("h264"), mobile, false},
+		{"portrait 1080p", stream("h264", func(s *probe.Stream) { s.Width, s.Height = 1080, 1920 }), compat, true},
+		{"rotated 1080p", stream("h264", func(s *probe.Stream) {
+			s.SideData = []probe.SideData{{Type: "Display Matrix", Rotation: 90}}
+		}), compat, true},
 		{"hi10p", stream("h264", func(s *probe.Stream) { s.PixFmt = "yuv420p10le" }), compat, false},
 		{"bitrate above cap", stream("h264", func(s *probe.Stream) { s.BitRate = "20000000" }), compat, false},
 		{"encode mode", stream("h264"), Params{VideoMode: VideoEncode, Codec: "h264"}, false},

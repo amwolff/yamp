@@ -82,7 +82,8 @@ func BuildArgs(in Input) (Plan, error) {
 	}
 	plan.Width, plan.Height = v.Width, v.Height
 	if !plan.CopyVideo {
-		plan.Width, plan.Height = outputSize(v.Width, v.Height, p.MaxHeight)
+		w, h := v.DisplaySize()
+		plan.Width, plan.Height = outputSize(w, h, p.MaxHeight)
 	}
 
 	args := []string{
@@ -152,7 +153,8 @@ func canCopyVideo(r *probe.Result, v *probe.Stream, p Params) bool {
 	default:
 		return false
 	}
-	if p.MaxHeight > 0 && v.Height > p.MaxHeight {
+	// Like outputSize, the limit applies to the shorter side.
+	if p.MaxHeight > 0 && min(v.Width, v.Height) > p.MaxHeight {
 		return false
 	}
 	if p.MaxFPS > 0 && v.FPS() > float64(p.MaxFPS)+0.01 {
@@ -201,7 +203,7 @@ func videoFilters(in Input, v *probe.Stream, fps, outFPS float64, w, h int) []st
 	if v.HDR() && in.Params.Tonemap && in.Caps.CanTonemap() {
 		f = append(f, tonemapChain(v.ColorTransfer))
 	}
-	if w != v.Width || h != v.Height {
+	if dw, dh := v.DisplaySize(); w != dw || h != dh {
 		f = append(f, fmt.Sprintf("scale=%d:%d", w, h))
 	}
 	tenBit := in.Params.TenBit && in.Params.Codec != "h264"

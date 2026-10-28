@@ -62,7 +62,6 @@ scripts/make-fixtures.sh testdata/lib 30   # sample library: one file per class
 
 ## Known bugs
 
-- Rotated phone videos lose detail when a profile scales them down: the portrait picture is squeezed into a landscape frame, for example 1280×720 instead of 720×1280.
 - Thumbnails of HDR videos aren't tone-mapped, so they look washed out (green for Dolby Vision profile 5).
 - HEVC with 4:2:2 or 4:4:4 chroma is treated like 4:2:0 and served or copied as is, although many devices can't decode it.
 - AAC Main, LTP and xHE-AAC are copied and labelled as AAC-LC (`mp4a.40.2`), so browsers may fail to decode them.

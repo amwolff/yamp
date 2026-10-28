@@ -223,3 +223,18 @@ func TestDuration(t *testing.T) {
 		t.Fatalf("duration = %d ms", got)
 	}
 }
+
+func TestDisplaySize(t *testing.T) {
+	for rotation, want := range map[string][2]int{
+		"0": {1920, 1080}, "90": {1080, 1920}, "-90": {1080, 1920}, "180": {1920, 1080}, "270": {1080, 1920},
+	} {
+		r, err := Parse([]byte(`{"streams":[{"codec_type":"video","width":1920,"height":1080,` +
+			`"side_data_list":[{"side_data_type":"Display Matrix","rotation":` + rotation + `}]}]}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if w, h := r.Video().DisplaySize(); w != want[0] || h != want[1] {
+			t.Errorf("rotation %s: %dx%d, want %dx%d", rotation, w, h, want[0], want[1])
+		}
+	}
+}

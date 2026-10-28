@@ -361,6 +361,7 @@ func (q *Queue) runJob(ctx context.Context, job db.ClaimJobRow) error {
 		_ = fsutil.RemoveIfExists(final)
 		return errors.New("the output has no video stream")
 	}
+	ow, oh := ov.DisplaySize()
 	info, err := os.Stat(final)
 	if err != nil {
 		return err
@@ -370,7 +371,7 @@ func (q *Queue) runJob(ctx context.Context, job db.ClaimJobRow) error {
 		id, insErr := tq.InsertRendition(ctx, db.InsertRenditionParams{
 			MediaID: m.ID, ProfileID: prof.ID, ParamsHash: params.Hash(), Path: final, Size: info.Size(),
 			Mime: "video/mp4", Codecs: probe.JoinCodecs(false, ov, oa),
-			Width: int64(ov.Width), Height: int64(ov.Height), CreatedAt: time.Now().Unix(),
+			Width: int64(ow), Height: int64(oh), CreatedAt: time.Now().Unix(),
 		})
 		if insErr != nil {
 			return insErr

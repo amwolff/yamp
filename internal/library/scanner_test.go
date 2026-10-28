@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -192,6 +193,26 @@ func TestRescanRenameMissingAndDuplicate(t *testing.T) {
 	}
 	if v, _ := st.GetSetting(ctx, "salt"); v != "another salt" {
 		t.Fatalf("salt setting = %q", v)
+	}
+}
+
+func TestScanRotated(t *testing.T) {
+	lib := t.TempDir()
+	ffmpeg, _ := testutil.FFmpeg(t)
+	// A phone video: stored landscape, displayed portrait.
+	//nolint:gosec // G204: test fixture
+	cmd := exec.Command(ffmpeg, "-nostdin", "-loglevel", "error", "-display_rotation:v:0", "90", "-noautorotate",
+		"-f", "lavfi", "-i", "testsrc2=size=320x180:duration=1", "-c:v", "libx264", "-preset", "ultrafast",
+		"-pix_fmt", "yuv420p", filepath.Join(lib, "phone.mp4"))
+	if b, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("make fixture: %v\n%s", err, b)
+	}
+	s, st := newScanner(t, lib)
+	if err := s.Scan(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if m := mediaByPath(t, st, lib)["phone.mp4"]; m.Width != 180 || m.Height != 320 {
+		t.Fatalf("size = %dx%d, want 180x320", m.Width, m.Height)
 	}
 }
 

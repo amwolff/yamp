@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -51,6 +52,13 @@ type Stream struct {
 	ExtradataDump    string            `json:"extradata"`
 	Disposition      map[string]int    `json:"disposition"`
 	Tags             map[string]string `json:"tags"`
+	SideData         []SideData        `json:"side_data_list"`
+}
+
+// SideData is one side data entry of a stream.
+type SideData struct {
+	Type     string  `json:"side_data_type"`
+	Rotation float64 `json:"rotation"`
 }
 
 // Prober runs ffprobe.
@@ -210,6 +218,17 @@ func (s *Stream) Interlaced() bool {
 		return true
 	}
 	return false
+}
+
+// DisplaySize returns the width and height after the rotation in the display
+// matrix. ffmpeg applies this rotation before the filters.
+func (s *Stream) DisplaySize() (int, int) {
+	for _, sd := range s.SideData {
+		if sd.Type == "Display Matrix" && int(math.Abs(math.Round(sd.Rotation)))%180 == 90 {
+			return s.Height, s.Width
+		}
+	}
+	return s.Width, s.Height
 }
 
 // Extradata decodes the hexdump that ffprobe prints with -show_data. Each line
