@@ -24,6 +24,34 @@ func TestPresetsValid(t *testing.T) {
 	}
 }
 
+func preset(name string) Params {
+	for _, p := range Presets {
+		if p.Name == name {
+			return p.Params
+		}
+	}
+	panic("no preset " + name)
+}
+
+const (
+	appleName  = "High quality HEVC (Apple)"
+	compatName = "Compatible 1080p H.264"
+	mobileName = "Mobile 720p"
+	hevcName   = "Efficient HEVC"
+)
+
+func TestDefaultPreset(t *testing.T) {
+	var auto []string
+	for _, p := range Presets {
+		if p.Policy != PolicyManual {
+			auto = append(auto, p.Name)
+		}
+	}
+	if len(auto) != 1 || auto[0] != appleName || Presets[0].Name != appleName {
+		t.Fatalf("automatic presets = %q, first = %q", auto, Presets[0].Name)
+	}
+}
+
 func TestParamsHash(t *testing.T) {
 	a := Presets[0].Params
 	b := a
@@ -53,7 +81,7 @@ func TestParamsValidate(t *testing.T) {
 		func(p *Params) { p.VideoMode = "maybe" },
 	}
 	for i, mutate := range bad {
-		p := Presets[0].Params
+		p := preset(compatName)
 		mutate(&p)
 		if p.Validate() == nil {
 			t.Errorf("case %d: invalid params accepted: %+v", i, p)
@@ -111,8 +139,9 @@ func argString(t *testing.T, in Input) (Plan, string) {
 const prefix = "-nostdin -hide_banner -loglevel error -nostats -stats_period 1 -progress pipe:1 -y "
 
 func TestBuildArgsGolden(t *testing.T) {
-	compat := Presets[0].Params
-	hevc := Presets[2].Params
+	compat := preset(compatName)
+	hevc := preset(hevcName)
+	apple := preset(appleName)
 	tests := []struct {
 		name    string
 		in      Input
@@ -174,6 +203,33 @@ func TestBuildArgsGolden(t *testing.T) {
 				"-an -movflags +faststart -f mp4 OUT",
 			encoder: "libx265",
 		},
+		{
+			name: "apple 4k hdr hevc copy, dts 5.1 to aac",
+			in: Input{Probe: result(stream("hevc", func(s *probe.Stream) {
+				s.Width, s.Height, s.PixFmt, s.ColorTransfer, s.BitRate = 3840, 2160, "yuv420p10le", "smpte2084", "18000000"
+			}), stream("dts", func(s *probe.Stream) { s.Channels = 6 })), Params: apple},
+			want: prefix + "-i IN -map 0:0 -map 0:1 -map_metadata -1 -map_chapters -1 -sn -dn " +
+				"-c:v copy -tag:v hvc1 -c:a aac -b:a 384k -movflags +faststart -f mp4 OUT",
+			encoder: "copy",
+		},
+		{
+			name: "apple h264 copy",
+			in:   Input{Probe: result(stream("h264"), stream("ac3", func(s *probe.Stream) { s.Channels = 6 })), Params: apple},
+			want: prefix + "-i IN -map 0:0 -map 0:1 -map_metadata -1 -map_chapters -1 -sn -dn " +
+				"-c:v copy -c:a aac -b:a 384k -movflags +faststart -f mp4 OUT",
+			encoder: "copy",
+		},
+		{
+			name: "apple hdr hi10p to hevc 10-bit",
+			in: Input{Probe: result(stream("h264", func(s *probe.Stream) {
+				s.PixFmt, s.ColorTransfer = "yuv420p10le", "smpte2084"
+			}), stream("aac")), Params: apple, Encoder: "libx265"},
+			want: prefix + "-i IN -map 0:0 -map 0:1 -map_metadata -1 -map_chapters -1 -sn -dn " +
+				"-vf format=yuv420p10le -c:v libx265 -preset slow -crf 20 -tag:v hvc1 -maxrate 25000k -bufsize 50000k " +
+				"-force_key_frames expr:gte(t,n_forced*2) -x265-params scenecut=0:open-gop=0:log-level=error " +
+				"-c:a copy -movflags +faststart -f mp4 OUT",
+			encoder: "libx265",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -205,8 +261,9 @@ func TestBuildArgsInvariants(t *testing.T) {
 }
 
 func TestCopyDecisions(t *testing.T) {
-	compat := Presets[0].Params
-	mobile := Presets[1].Params
+	compat := preset(compatName)
+	mobile := preset(mobileName)
+	apple := preset(appleName)
 	tests := []struct {
 		name string
 		v    probe.Stream
@@ -219,6 +276,14 @@ func TestCopyDecisions(t *testing.T) {
 		{"bitrate above cap", stream("h264", func(s *probe.Stream) { s.BitRate = "20000000" }), compat, false},
 		{"encode mode", stream("h264"), Params{VideoMode: VideoEncode, Codec: "h264"}, false},
 		{"hevc for h264 profile", stream("hevc"), compat, false},
+		{"apple: compatible h264", stream("h264"), apple, true},
+		{"apple: 4k hdr hevc", stream("hevc", func(s *probe.Stream) {
+			s.Width, s.Height, s.PixFmt, s.ColorTransfer = 3840, 2160, "yuv420p10le", "smpte2084"
+		}), apple, true},
+		{"apple: hevc above the bitrate cap", stream("hevc", func(s *probe.Stream) { s.BitRate = "60000000" }), apple, false},
+		{"apple: hi10p h264", stream("h264", func(s *probe.Stream) { s.PixFmt = "yuv420p10le" }), apple, false},
+		{"apple: interlaced h264", stream("h264", func(s *probe.Stream) { s.FieldOrder = "tt" }), apple, false},
+		{"apple: vp9", stream("vp9"), apple, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -234,7 +299,7 @@ func TestCopyDecisions(t *testing.T) {
 }
 
 func TestBuildArgsNoEncoder(t *testing.T) {
-	_, err := BuildArgs(Input{Probe: result(stream("mpeg2video")), Params: Presets[0].Params, Caps: caps()})
+	_, err := BuildArgs(Input{Probe: result(stream("mpeg2video")), Params: preset(compatName), Caps: caps()})
 	if !errors.Is(err, ErrNoEncoder) {
 		t.Fatalf("err = %v", err)
 	}

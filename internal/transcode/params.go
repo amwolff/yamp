@@ -156,9 +156,20 @@ type Preset struct {
 // Presets are the built-in profiles that YAMP creates on the first start.
 var Presets = []Preset{
 	{
+		// The default. The bitrate cap keeps streams practical over the internet.
+		//
 		// With copy-if-compatible this profile also covers remux and audio-only
 		// jobs: it copies what it can and encodes the rest.
-		Name: "Compatible 1080p H.264", Policy: PolicyWhenNeeded, Priority: 10,
+		Name: "High quality HEVC (Apple)", Policy: PolicyWhenNeeded, Priority: 20,
+		Params: Params{
+			VideoMode: VideoCopyIfCompatible, Codec: "hevc", Encoder: "auto", Quality: 20,
+			MaxBitrateK: 25000, Preset: "slow", MaxHeight: 2160, TenBit: true,
+			AudioBitrateK: 384,
+		},
+	},
+	{
+		// The fallback for browsers without HEVC.
+		Name: "Compatible 1080p H.264", Policy: PolicyManual, Priority: 10,
 		Params: Params{
 			VideoMode: VideoCopyIfCompatible, Codec: "h264", Encoder: "auto", Quality: 21,
 			MaxBitrateK: 8000, Preset: "medium", MaxHeight: 1080, Tonemap: true,

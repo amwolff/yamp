@@ -41,13 +41,9 @@ Transcode profiles, parallel jobs and the scan interval are set in the admin pan
 
 ## Transcoding
 
-Every file is classified when it is scanned:
+Every file is classified when it is scanned: **direct** (H.264 + AAC in MP4) plays everywhere; **conditional** (HEVC in MP4, AV1, VP9) plays where the browser can decode it; **remux**, **audio** and **transcode** (wrong container, AC-3/DTS audio, or video such as Hi10P or MPEG-2) need a new version.
 
-- **direct** (H.264 + AAC in MP4): served as is.
-- **conditional** (HEVC, AV1, VP9): served to browsers that can decode it, plus an H.264 copy for the rest.
-- **remux** (compatible codecs, wrong container): streams copied into MP4.
-- **audio** (compatible video, AC-3/DTS audio): audio re-encoded to AAC.
-- **transcode** (Hi10P, MPEG-2, interlaced, HDR): full encode to H.264, with HDR tone-mapped to SDR.
+The default profile, **High quality HEVC (Apple)**, keeps HDR and 5.1; for browsers without HEVC, the video page offers **Compatible 1080p H.264**.
 
 The player offers every version and the browser picks the first one it can decode. Editing a profile marks its transcodes stale; they keep playing until they are redone.
 
@@ -63,6 +59,13 @@ golangci-lint run
 sqlc generate                              # after changing internal/store/queries or migrations
 scripts/make-fixtures.sh testdata/lib 30   # sample library: one file per class
 ```
+
+## Known bugs
+
+- Rotated phone videos lose detail when a profile scales them down: the portrait picture is squeezed into a landscape frame, for example 1280×720 instead of 720×1280.
+- Thumbnails of HDR videos aren't tone-mapped, so they look washed out (green for Dolby Vision profile 5).
+- HEVC with 4:2:2 or 4:4:4 chroma is treated like 4:2:0 and served or copied as is, although many devices can't decode it.
+- AAC Main, LTP and xHE-AAC are copied and labelled as AAC-LC (`mp4a.40.2`), so browsers may fail to decode them.
 
 ## Not done yet
 

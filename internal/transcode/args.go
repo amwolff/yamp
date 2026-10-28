@@ -138,6 +138,10 @@ func canCopyVideo(r *probe.Result, v *probe.Stream, p Params) bool {
 			return false
 		}
 	case "hevc":
+		// Every HEVC decoder also decodes H.264, so compatible H.264 stays.
+		if probe.H264Compatible(v) {
+			break
+		}
 		if v.CodecName != "hevc" || v.Interlaced() || v.BitDepth() > 10 || (v.HDR() && p.Tonemap) {
 			return false
 		}

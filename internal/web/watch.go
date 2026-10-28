@@ -28,11 +28,19 @@ type watchData struct {
 	Sources    []source
 	Subtitles  []db.Subtitle
 	Renditions []db.ListRenditionsForMediaRow
-	Profiles   []db.Profile
+	Unplayable transcodeForm
+	Transcode  transcodeForm
 	ResumeMs   int64
 	Rating     ratingData
 	Views      int64
 	Status     statusData
+}
+
+type transcodeForm struct {
+	ID       string
+	Pid      string
+	Profiles []db.Profile
+	Selected int64
 }
 
 type ratingData struct {
@@ -115,10 +123,13 @@ func (s *Server) handleWatch(w http.ResponseWriter, r *http.Request) {
 		s.serverError(w, r, err)
 		return
 	}
-	if d.Profiles, err = s.Store.ListProfiles(ctx); err != nil {
+	profiles, err := s.Store.ListProfiles(ctx)
+	if err != nil {
 		s.serverError(w, r, err)
 		return
 	}
+	d.Unplayable = transcodeForm{ID: "unplayable", Pid: m.Pid, Profiles: profiles, Selected: fallbackProfile(profiles)}
+	d.Transcode = transcodeForm{ID: "transcode", Pid: m.Pid, Profiles: profiles}
 	pb, err := s.Store.GetPlayback(ctx, db.GetPlaybackParams{UserID: u.ID, MediaID: m.ID})
 	switch {
 	case err == nil:
@@ -143,6 +154,16 @@ func (s *Server) handleWatch(w http.ResponseWriter, r *http.Request) {
 	}
 	// The title holds only the public ID; the name is in the page body.
 	s.render(w, r, http.StatusOK, "watch", s.newPage(r, m.Pid+" - YAMP", "watch", d))
+}
+
+// fallbackProfile returns the highest-priority H.264 profile, or 0.
+func fallbackProfile(profiles []db.Profile) int64 {
+	for _, p := range profiles {
+		if params, err := transcode.ParseParams(p.ParamsJson); err == nil && params.Codec == "h264" {
+			return p.ID
+		}
+	}
+	return 0
 }
 
 func (s *Server) status(r *http.Request, m db.Medium, polling bool) (statusData, error) {

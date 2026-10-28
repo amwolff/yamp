@@ -11,7 +11,7 @@
     <div class="unplayable" id="unplayable"{{if .Sources}} hidden{{end}}>
       <p><strong>This video cannot play on this device yet.</strong></p>
       <p class="muted">The browser cannot decode the original file and there is no compatible version.</p>
-      {{template "transcode-form" .}}
+      {{template "transcode-form" .Unplayable}}
     </div>
   </div>
 
@@ -51,17 +51,17 @@
         </tbody>
       </table></div>
       {{else}}<p class="muted">There are no transcoded versions.</p>{{end}}
-      {{template "transcode-form" .}}
+      {{template "transcode-form" .Transcode}}
     </details>
   </section>
 </div>
 {{end}}{{end}}
 
 {{define "transcode-form"}}
-<form class="inline-form" method="post" action="/admin/media/{{.Media.Pid}}/transcode">
-  <label class="sr-only" for="profile-{{.Media.Pid}}">Profile</label>
-  <select name="profile" id="profile-{{.Media.Pid}}">
-    {{range .Profiles}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+<form class="inline-form" method="post" action="/admin/media/{{.Pid}}/transcode">
+  <label class="sr-only" for="profile-{{.ID}}">Profile</label>
+  <select name="profile" id="profile-{{.ID}}">
+    {{range .Profiles}}<option value="{{.ID}}"{{if eq .ID $.Selected}} selected{{end}}>{{.Name}}</option>{{end}}
   </select>
   <button class="btn">Transcode now</button>
 </form>

@@ -415,3 +415,41 @@ func TestAddUserErrorKeepsName(t *testing.T) {
 		t.Fatal("new user row missing")
 	}
 }
+
+func TestUnplayableFormPreselectsH264(t *testing.T) {
+	ts := newTestServer(t)
+	ts.setup(t)
+	m := ts.addMedia(t, 1, "Movie")
+	profiles, err := ts.st.ListProfiles(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var compat int64
+	for _, p := range profiles {
+		if p.Name == "Compatible 1080p H.264" {
+			compat = p.ID
+		}
+	}
+	_, body := ts.do(t, "GET", "/v/"+m.Pid, nil)
+	unplayable := between(t, body, `id="profile-unplayable"`, "</select>")
+	if !strings.Contains(unplayable, fmt.Sprintf(`value="%d" selected`, compat)) {
+		t.Fatalf("the H.264 profile is not preselected:\n%s", unplayable)
+	}
+	if strings.Contains(between(t, body, `id="profile-transcode"`, "</select>"), "selected") {
+		t.Fatal("the details form should keep the default order")
+	}
+}
+
+// between returns the part of s from start up to the next end.
+func between(t *testing.T, s, start, end string) string {
+	t.Helper()
+	_, after, ok := strings.Cut(s, start)
+	if !ok {
+		t.Fatalf("%q not found", start)
+	}
+	part, _, ok := strings.Cut(after, end)
+	if !ok {
+		t.Fatalf("%q not found after %q", end, start)
+	}
+	return part
+}
