@@ -297,6 +297,7 @@ func TestCopyDecisions(t *testing.T) {
 		{"apple: 4k hdr hevc", stream("hevc", func(s *probe.Stream) {
 			s.Width, s.Height, s.PixFmt, s.ColorTransfer = 3840, 2160, "yuv420p10le", "smpte2084"
 		}), apple, true},
+		{"apple: hevc 4:2:2", stream("hevc", func(s *probe.Stream) { s.PixFmt = "yuv422p10le" }), apple, false},
 		{"apple: hevc above the bitrate cap", stream("hevc", func(s *probe.Stream) { s.BitRate = "60000000" }), apple, false},
 		{"apple: hi10p h264", stream("h264", func(s *probe.Stream) { s.PixFmt = "yuv420p10le" }), apple, false},
 		{"apple: interlaced h264", stream("h264", func(s *probe.Stream) { s.FieldOrder = "tt" }), apple, false},

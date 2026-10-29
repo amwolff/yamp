@@ -206,6 +206,11 @@ func (s *Stream) BitDepth() int {
 	return 8
 }
 
+// Chroma420 reports whether a video stream uses 4:2:0 chroma subsampling.
+func (s *Stream) Chroma420() bool {
+	return strings.Contains(s.PixFmt, "420")
+}
+
 // HDR reports whether the stream uses a PQ or HLG transfer function.
 func (s *Stream) HDR() bool {
 	return s.ColorTransfer == "smpte2084" || s.ColorTransfer == "arib-std-b67"

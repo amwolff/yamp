@@ -143,7 +143,7 @@ func canCopyVideo(r *probe.Result, v *probe.Stream, p Params) bool {
 		if probe.H264Compatible(v) {
 			break
 		}
-		if v.CodecName != "hevc" || v.Interlaced() || v.BitDepth() > 10 || (v.HDR() && p.Tonemap) {
+		if v.CodecName != "hevc" || !v.Chroma420() || v.Interlaced() || v.BitDepth() > 10 || (v.HDR() && p.Tonemap) {
 			return false
 		}
 	case "av1":

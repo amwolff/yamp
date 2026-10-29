@@ -63,7 +63,6 @@ scripts/make-fixtures.sh testdata/lib 30   # sample library: one file per class
 ## Known bugs
 
 - Thumbnails of Dolby Vision profile 5 videos are green.
-- HEVC with 4:2:2 or 4:4:4 chroma is treated like 4:2:0 and served or copied as is, although many devices can't decode it.
 - AAC Main, LTP and xHE-AAC are copied and labelled as AAC-LC (`mp4a.40.2`), so browsers may fail to decode them.
 
 ## Not done yet

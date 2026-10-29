@@ -138,7 +138,8 @@ func conditionalMP4Video(v *Stream) bool {
 	switch v.CodecName {
 	case "hevc":
 		// With the hev1 tag Safari plays the audio but shows a black screen.
-		return v.CodecTagString == "hvc1"
+		// Many devices decode only 4:2:0 HEVC.
+		return v.CodecTagString == "hvc1" && v.Chroma420()
 	case "av1", "vp9":
 		return true
 	}

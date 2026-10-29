@@ -143,6 +143,8 @@ func TestClassify(t *testing.T) {
 	hvc1 := Stream{CodecType: "video", CodecName: "hevc", CodecTagString: "hvc1", PixFmt: "yuv420p10le", Profile: "Main 10", Level: 120}
 	hev1 := hvc1
 	hev1.CodecTagString = "hev1"
+	hevc422 := hvc1
+	hevc422.PixFmt = "yuv422p10le"
 	vp9 := Stream{CodecType: "video", CodecName: "vp9", PixFmt: "yuv420p", Profile: "Profile 0"}
 	mpeg2 := Stream{CodecType: "video", CodecName: "mpeg2video", PixFmt: "yuv420p"}
 	cover := Stream{CodecType: "video", CodecName: "mjpeg", Disposition: map[string]int{"attached_pic": 1}}
@@ -173,6 +175,7 @@ func TestClassify(t *testing.T) {
 		{"interlaced", "a.mp4", mp4, []Stream{interlaced, aac}, true, Transcode, ""},
 		{"hdr", "a.mp4", mp4, []Stream{hdr, aac}, true, Transcode, ""},
 		{"hevc hvc1", "a.mp4", mp4, []Stream{hvc1, aac}, true, Conditional, "video/mp4"},
+		{"hevc 4:2:2", "a.mp4", mp4, []Stream{hevc422, aac}, true, Transcode, ""},
 		{"hevc hev1", "a.mp4", mp4, []Stream{hev1, aac}, true, Transcode, ""},
 		{"hevc mkv", "a.mkv", mkv, []Stream{hvc1, aac}, false, Transcode, ""},
 		{"vp9 webm", "a.webm", mkv, []Stream{vp9, opus}, false, Conditional, "video/webm"},
