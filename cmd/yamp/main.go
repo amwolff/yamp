@@ -107,7 +107,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stderr 
 	scanner := library.New(library.Config{
 		Roots: cfg.Libraries, CacheDir: cfg.CacheDir, FFmpeg: cfg.FFmpeg, Fsync: cfg.Fsync,
 		Prober: prober, Store: st, Hub: hub, Log: log.With("component", "library"),
-		Salt: sets.Salt, AfterScan: queue.AutoEnqueue,
+		Tonemap: caps.CanTonemap(), Salt: sets.Salt, AfterScan: queue.AutoEnqueue,
 	})
 	authMgr := auth.NewManager(st, cfg.CookieSecure, auth.DefaultArgon2)
 	srv, err := web.New(web.Deps{

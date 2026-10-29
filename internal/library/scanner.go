@@ -52,6 +52,8 @@ type Config struct {
 	Store    *store.Store
 	Hub      *events.Hub
 	Log      *slog.Logger
+	// Tonemap enables tone mapping of HDR thumbnails.
+	Tonemap bool
 	// Salt returns the current salt for public IDs.
 	Salt func() string
 	// AfterScan runs after each completed scan, for example to queue jobs.
@@ -359,7 +361,7 @@ func (s *Scanner) scanFile(ctx context.Context, f file, salt string,
 	seen[id] = true
 	byFP[hex.EncodeToString(fp)] = db.ListMediaForScanRow{ID: id, Path: f.path, Fingerprint: fp, Status: "ok"}
 
-	if err := s.thumbnail(ctx, id, f.path, a.Video.Index, res.Duration()); err != nil {
+	if err := s.thumbnail(ctx, id, f.path, a.Video, res.Duration()); err != nil {
 		s.issue("%s: thumbnail: %v", f.path, err)
 	}
 	if err := s.subtitles(ctx, id, f.path, res); err != nil {
@@ -401,7 +403,7 @@ func (s *Scanner) thumbnailFor(ctx context.Context, id int64) error {
 	if v == nil {
 		return probe.ErrNoVideo
 	}
-	return s.thumbnail(ctx, id, m.Path, v.Index, res.Duration())
+	return s.thumbnail(ctx, id, m.Path, v, res.Duration())
 }
 
 func moovFirstFile(path string) (bool, error) {

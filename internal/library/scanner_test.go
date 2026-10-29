@@ -3,6 +3,7 @@ package library
 import (
 	"bytes"
 	"context"
+	"image/jpeg"
 	"io"
 	"log/slog"
 	"os"
@@ -213,6 +214,37 @@ func TestScanRotated(t *testing.T) {
 	}
 	if m := mediaByPath(t, st, lib)["phone.mp4"]; m.Width != 180 || m.Height != 320 {
 		t.Fatalf("size = %dx%d, want 180x320", m.Width, m.Height)
+	}
+}
+
+func TestScanHDRThumbnail(t *testing.T) {
+	lib := t.TempDir()
+	ffmpeg, _ := testutil.FFmpeg(t)
+	// Red in PQ and BT.2020; without tone mapping it turns dull brown.
+	//nolint:gosec // G204: test fixture
+	cmd := exec.Command(ffmpeg, "-nostdin", "-loglevel", "error", "-f", "lavfi", "-i", "color=red:size=320x180:duration=1",
+		"-vf", "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv,zscale=t=linear:npl=100,"+
+			"format=gbrpf32le,zscale=p=bt2020:t=smpte2084:m=bt2020nc:r=tv,format=yuv420p10le",
+		"-c:v", "libx265", "-preset", "ultrafast", "-x265-params", "log-level=error", filepath.Join(lib, "red.mp4"))
+	if b, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("make fixture: %v\n%s", err, b)
+	}
+	s, st := newScanner(t, lib)
+	s.cfg.Tonemap = true
+	if err := s.Scan(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	thumb, err := os.ReadFile(ThumbPath(s.cfg.CacheDir, mediaByPath(t, st, lib)["red.mp4"].ID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	img, err := jpeg.Decode(bytes.NewReader(thumb))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, g, b, _ := img.At(img.Bounds().Dx()/2, img.Bounds().Dy()/2).RGBA()
+	if g>>8 > 32 {
+		t.Errorf("center pixel = rgb(%d, %d, %d), want red", r>>8, g>>8, b>>8)
 	}
 }
 

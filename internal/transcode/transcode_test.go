@@ -169,7 +169,7 @@ func TestBuildArgsGolden(t *testing.T) {
 				s.Width, s.Height, s.PixFmt, s.ColorTransfer = 3840, 2160, "yuv420p10le", "smpte2084"
 			}), stream("eac3")), Params: compat, Encoder: "libx264"},
 			want: prefix + "-i IN -map 0:0 -map 0:1 -map_metadata -1 -map_chapters -1 -sn -dn " +
-				"-vf " + tonemapChain("smpte2084") + ",scale=1920:1080,format=yuv420p " +
+				"-vf " + TonemapChain("smpte2084") + ",scale=1920:1080,format=yuv420p " +
 				"-c:v libx264 -preset medium -crf 21 -profile:v high -level:v 4.1 -maxrate 8000k -bufsize 16000k " +
 				"-force_key_frames expr:gte(t,n_forced*2) -sc_threshold 0 " +
 				"-c:a aac -b:a 160k -ac 2 -movflags +faststart -f mp4 OUT",

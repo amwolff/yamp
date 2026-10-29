@@ -13,6 +13,7 @@ import (
 	"github.com/amwolff/yamp/internal/fsutil"
 	"github.com/amwolff/yamp/internal/probe"
 	"github.com/amwolff/yamp/internal/store/db"
+	"github.com/amwolff/yamp/internal/transcode"
 )
 
 // ThumbPath returns the thumbnail path of a media item.
@@ -23,7 +24,7 @@ func ThumbPath(cacheDir string, id int64) string {
 // thumbnail writes a JPEG from ~10% into the video. The fast attempt decodes
 // only keyframes; short or long-GOP files may have none after the seek point,
 // so the fallbacks decode every frame and finally take the first one.
-func (s *Scanner) thumbnail(ctx context.Context, id int64, path string, videoIndex int, duration time.Duration) error {
+func (s *Scanner) thumbnail(ctx context.Context, id int64, path string, v *probe.Stream, duration time.Duration) error {
 	final := ThumbPath(s.cfg.CacheDir, id)
 	tmp := final + ".partial"
 	if err := os.MkdirAll(filepath.Dir(final), 0o750); err != nil {
@@ -32,16 +33,20 @@ func (s *Scanner) thumbnail(ctx context.Context, id int64, path string, videoInd
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 	seek := fmt.Sprintf("%.3f", (duration / 10).Seconds())
+	vf := "scale=640:-2"
+	if s.cfg.Tonemap && v.HDR() {
+		vf = transcode.TonemapChain(v.ColorTransfer) + "," + vf
+	}
 	attempts := [][]string{
-		{"-skip_frame", "nokey", "-ss", seek, "-i", path, "-vf", "thumbnail=24,scale=640:-2"},
-		{"-ss", seek, "-i", path, "-vf", "thumbnail=24,scale=640:-2"},
-		{"-i", path, "-vf", "scale=640:-2"},
+		{"-skip_frame", "nokey", "-ss", seek, "-i", path, "-vf", "thumbnail=24," + vf},
+		{"-ss", seek, "-i", path, "-vf", "thumbnail=24," + vf},
+		{"-i", path, "-vf", vf},
 	}
 	var err error
 	for _, a := range attempts {
 		_ = fsutil.RemoveIfExists(tmp)
 		args := append([]string{"-nostdin", "-hide_banner", "-loglevel", "error", "-y"}, a...)
-		args = append(args, "-map", fmt.Sprintf("0:%d", videoIndex), "-frames:v", "1", "-q:v", "3",
+		args = append(args, "-map", fmt.Sprintf("0:%d", v.Index), "-frames:v", "1", "-q:v", "3",
 			"-f", "image2", "-c:v", "mjpeg", "-update", "1", tmp)
 		if err = run(ctx, s.cfg.FFmpeg, args...); err == nil && !fileEmpty(tmp) {
 			break

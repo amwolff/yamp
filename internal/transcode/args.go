@@ -10,9 +10,9 @@ import (
 	"github.com/amwolff/yamp/internal/probe"
 )
 
-// tonemapChain converts PQ or HLG to SDR BT.709 in software. The input tags are
+// TonemapChain converts PQ or HLG to SDR BT.709 in software. The input tags are
 // explicit because many files lack some of them.
-func tonemapChain(transfer string) string {
+func TonemapChain(transfer string) string {
 	return "zscale=tin=" + transfer + ":pin=bt2020:min=bt2020nc:t=linear:npl=100,format=gbrpf32le," +
 		"zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p"
 }
@@ -201,7 +201,7 @@ func videoFilters(in Input, v *probe.Stream, fps, outFPS float64, w, h int) []st
 		f = append(f, "fps="+strconv.FormatFloat(outFPS, 'f', -1, 64))
 	}
 	if v.HDR() && in.Params.Tonemap && in.Caps.CanTonemap() {
-		f = append(f, tonemapChain(v.ColorTransfer))
+		f = append(f, TonemapChain(v.ColorTransfer))
 	}
 	if dw, dh := v.DisplaySize(); w != dw || h != dh {
 		f = append(f, fmt.Sprintf("scale=%d:%d", w, h))
