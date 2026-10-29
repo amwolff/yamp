@@ -68,6 +68,9 @@ func TestCodecStrings(t *testing.T) {
 		{"vp9 webm", Stream{CodecName: "vp9"}, true, "vp9"},
 		{"aac lc", Stream{CodecName: "aac", Profile: "LC"}, false, "mp4a.40.2"},
 		{"he-aac", Stream{CodecName: "aac", Profile: "HE-AAC"}, false, "mp4a.40.5"},
+		{"aac main", Stream{CodecName: "aac", Profile: "Main"}, false, "mp4a.40.1"},
+		{"xhe-aac", Stream{CodecName: "aac", Profile: "xHE-AAC"}, false, "mp4a.40.42"},
+		{"aac unknown profile", Stream{CodecName: "aac"}, false, "mp4a.40.2"},
 		{"opus", Stream{CodecName: "opus"}, true, "opus"},
 		{"flac mp4", Stream{CodecName: "flac"}, false, "fLaC"},
 		{"unknown", Stream{CodecName: "mpeg2video"}, false, ""},
@@ -149,6 +152,8 @@ func TestClassify(t *testing.T) {
 	mpeg2 := Stream{CodecType: "video", CodecName: "mpeg2video", PixFmt: "yuv420p"}
 	cover := Stream{CodecType: "video", CodecName: "mjpeg", Disposition: map[string]int{"attached_pic": 1}}
 	aac := Stream{CodecType: "audio", CodecName: "aac", Profile: "LC"}
+	aacMain := aac
+	aacMain.Profile = "Main"
 	ac3 := Stream{CodecType: "audio", CodecName: "ac3"}
 	opus := Stream{CodecType: "audio", CodecName: "opus"}
 
@@ -171,6 +176,7 @@ func TestClassify(t *testing.T) {
 		{"mov", "a.mov", mp4, []Stream{h264, aac}, true, Remux, ""},
 		{"mkv h264 ac3", "a.mkv", mkv, []Stream{h264, ac3}, false, AudioOnly, ""},
 		{"mp4 h264 ac3", "a.mp4", mp4, []Stream{h264, ac3}, true, AudioOnly, ""},
+		{"mp4 h264 aac main", "a.mp4", mp4, []Stream{h264, aacMain}, true, AudioOnly, ""},
 		{"hi10p", "a.mkv", mkv, []Stream{h264hi10, aac}, false, Transcode, ""},
 		{"interlaced", "a.mp4", mp4, []Stream{interlaced, aac}, true, Transcode, ""},
 		{"hdr", "a.mp4", mp4, []Stream{hdr, aac}, true, Transcode, ""},

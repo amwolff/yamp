@@ -63,7 +63,7 @@ func BuildArgs(in Input) (Plan, error) {
 	}
 	a := in.Probe.Audio(p.AudioLang)
 	plan := Plan{CopyVideo: canCopyVideo(in.Probe, v, p)}
-	plan.CopyAudio = a != nil && a.CodecName == "aac" && (!p.Stereo || a.Channels <= 2)
+	plan.CopyAudio = a != nil && probe.AACCompatible(a) && (!p.Stereo || a.Channels <= 2)
 	if !plan.CopyVideo && in.Encoder == "" {
 		return Plan{}, ErrNoEncoder
 	}

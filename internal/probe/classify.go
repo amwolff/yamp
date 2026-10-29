@@ -82,10 +82,18 @@ func H264Compatible(v *Stream) bool {
 	return v.BitDepth() == 8 && !v.Interlaced() && !v.HDR()
 }
 
-// AACCompatible reports whether the audio can stay unchanged in MP4; no audio
-// counts as compatible.
+// AACCompatible reports whether the audio can stay unchanged in MP4: AAC LC,
+// HE-AAC or HE-AACv2, which every browser decodes. No audio counts as compatible.
 func AACCompatible(a *Stream) bool {
-	return a == nil || a.CodecName == "aac"
+	if a == nil {
+		return true
+	}
+	switch a.Profile {
+	// ffprobe omits a profile it does not know; such AAC is almost always LC.
+	case "LC", "HE-AAC", "HE-AACv2", "":
+		return a.CodecName == "aac"
+	}
+	return false
 }
 
 func webmAudioOK(a *Stream) bool {

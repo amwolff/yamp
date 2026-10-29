@@ -164,6 +164,13 @@ func TestBuildArgsGolden(t *testing.T) {
 			encoder: "copy",
 		},
 		{
+			name: "aac main to lc",
+			in:   Input{Probe: result(stream("h264"), stream("aac", func(s *probe.Stream) { s.Profile = "Main" })), Params: compat},
+			want: prefix + "-i IN -map 0:0 -map 0:1 -map_metadata -1 -map_chapters -1 -sn -dn " +
+				"-c:v copy -c:a aac -b:a 160k -ac 2 -movflags +faststart -f mp4 OUT",
+			encoder: "copy",
+		},
+		{
 			name: "4k hdr hevc to 1080p h264 x264",
 			in: Input{Probe: result(stream("hevc", func(s *probe.Stream) {
 				s.Width, s.Height, s.PixFmt, s.ColorTransfer = 3840, 2160, "yuv420p10le", "smpte2084"

@@ -28,11 +28,8 @@ func CodecString(s *Stream, webm bool) string {
 	case "vp8":
 		return "vp8"
 	case "aac":
-		switch s.Profile {
-		case "HE-AAC":
-			return "mp4a.40.5"
-		case "HE-AACv2":
-			return "mp4a.40.29"
+		if aot, ok := aacObjectTypes[s.Profile]; ok {
+			return "mp4a.40." + strconv.Itoa(aot)
 		}
 		return "mp4a.40.2"
 	case "mp3":
@@ -61,6 +58,11 @@ func TypeAttr(mime, codecs string) string {
 		return mime
 	}
 	return mime + `; codecs="` + codecs + `"`
+}
+
+// aacObjectTypes maps ffprobe's AAC profiles to MPEG-4 audio object types.
+var aacObjectTypes = map[string]int{
+	"Main": 1, "LC": 2, "SSR": 3, "LTP": 4, "HE-AAC": 5, "LD": 23, "HE-AACv2": 29, "ELD": 39, "xHE-AAC": 42,
 }
 
 // JoinCodecs joins the non-empty codecs strings of the given streams.
