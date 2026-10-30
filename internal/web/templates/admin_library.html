@@ -11,6 +11,15 @@
   </section>
 
   <section class="panel">
+    <h2>Automatic scan</h2>
+    <form method="post" action="/admin/scan-interval" class="inline-form">
+      <label>Interval in minutes (0 = off)<input type="number" name="minutes" min="0" max="10080" value="{{.ScanInterval}}"></label>
+      <button class="btn btn-ghost">Save</button>
+    </form>
+    <p class="muted small">YAMP also scans at startup.</p>
+  </section>
+
+  <section class="panel">
     <h2>Library roots</h2>
     <ul class="plain">{{range .Roots}}<li><code>{{.}}</code></li>{{end}}</ul>
     <p class="muted small">Set them with <code>-library</code> or <code>YAMP_LIBRARY</code>. YAMP does not write to them.</p>
@@ -26,15 +35,6 @@
       </tbody>
     </table>
     {{else}}<p class="muted">No videos yet.</p>{{end}}
-  </section>
-
-  <section class="panel">
-    <h2>Automatic scan</h2>
-    <form method="post" action="/admin/scan-interval" class="inline-form">
-      <label>Interval in minutes (0 = off)<input type="number" name="minutes" min="0" max="10080" value="{{.ScanInterval}}"></label>
-      <button class="btn btn-ghost">Save</button>
-    </form>
-    <p class="muted small">YAMP also scans at startup.</p>
   </section>
 </div>
 {{end}}
