@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Build
+        env:
+          CGO_ENABLED: 0
+          GOOS: linux
+        run: |
+          for arch in amd64 arm64; do
+            GOARCH=$arch go build -trimpath -ldflags="-s -w" -o "yamp-linux-$arch" ./cmd/yamp
+          done
+          sha256sum yamp-linux-* > SHA256SUMS
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --generate-notes yamp-linux-* SHA256SUMS
