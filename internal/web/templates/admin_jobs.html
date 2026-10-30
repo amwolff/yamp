@@ -12,14 +12,14 @@
 {{end}}
 
 {{define "jobs-table"}}
-{{if not .}}<p class="empty">There are no jobs.</p>{{else}}
+{{if not .}}<p class="empty">No jobs.</p>{{else}}
 <div class="table-wrap"><table class="table">
   <thead><tr><th class="col-name">Video</th><th>Profile</th><th>State</th><th>Progress</th><th class="hide-sm">Added</th><th></th></tr></thead>
   <tbody>
   {{range .}}<tr>
     <td class="col-name"><a class="name" href="/v/{{.MediaPid}}">{{.MediaTitle}}</a><div class="pid small">{{.MediaPid}}</div></td>
     <td>{{.ProfileName}}</td>
-    <td><span class="state state-{{.State}}">{{.State}}</span>{{with .Live}}<div class="muted small">{{.Encoder}}{{if eq .Phase "finalize"}} · finishing{{end}}</div>{{end}}</td>
+    <td><span class="state state-{{.State}}">{{.State}}</span>{{with .Live}}<div class="muted small">{{.Encoder}}{{if eq .Phase "finalize"}} · final step{{end}}</div>{{end}}</td>
     <td>
       {{if .Live}}<div class="progress-row"><progress max="100" value="{{percent .Live.Progress}}"></progress><span>{{percent .Live.Progress}}%{{with .Live.Speed}} · {{printf "%.1f" .}}×{{end}}</span></div>
       {{else if eq .State "done"}}100%{{end}}

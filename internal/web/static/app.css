@@ -123,7 +123,7 @@ img { display: block; max-width: 100%; }
   border: 1px solid var(--border); background: var(--surface); margin-bottom: 16px;
 }
 .flash { border-color: color-mix(in srgb, var(--ok) 45%, var(--border)); }
-.alert { border-color: color-mix(in srgb, var(--danger) 55%, var(--border)); color: var(--text); }
+.alert { border-color: color-mix(in srgb, var(--danger) 55%, var(--border)); color: var(--text); white-space: pre-line; }
 .alert-warn { border-color: color-mix(in srgb, var(--warn) 55%, var(--border)); }
 .notice-ok { border-color: color-mix(in srgb, var(--ok) 55%, var(--border)); }
 .notice-err { border-color: color-mix(in srgb, var(--danger) 55%, var(--border)); }
@@ -333,7 +333,7 @@ progress.resume::-moz-progress-bar { background: #ff4d4d; border-radius: 0; }
 }
 .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
 .panel-head h2, .panel-head form { margin: 0; }
-.panel > form { margin-top: 12px; }
+.panel > form, .panel > form + ul { margin-top: 12px; }
 .admin-grid { display: grid; gap: 0 16px; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); align-items: start; }
 .admin-grid .wide { grid-column: 1 / -1; }
 .section-title { margin: 12px 0; }

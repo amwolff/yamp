@@ -415,7 +415,7 @@ func (s *Server) handleMediaTranscode(w http.ResponseWriter, r *http.Request) {
 		s.serverError(w, r, err)
 		return
 	}
-	msg := "The transcode job is in the queue."
+	msg := "The job is in the queue."
 	if !added {
 		msg = "A job for this profile is already in the queue."
 	}

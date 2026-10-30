@@ -31,7 +31,7 @@ const (
 
 // Errors returned by Manager.
 var (
-	ErrRateLimited    = errors.New("too many failed login attempts; wait a moment")
+	ErrRateLimited    = errors.New("too many failed logins; wait 5 seconds")
 	ErrBadCredentials = errors.New("wrong username or password")
 	ErrSetupDone      = errors.New("setup is already complete")
 )

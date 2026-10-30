@@ -4,9 +4,9 @@
 <div class="admin-grid">
   <section class="panel wide">
     <h2>Salt for public IDs</h2>
-    <p>YAMP shows each video as <code>HMAC-SHA256(salt, fingerprint)</code>, cut to 16 hex characters. Page titles, URLs and the lock screen of a phone show only this ID.</p>
+    <p>The public ID of a video is <code>HMAC-SHA256(salt, fingerprint)</code>, cut to 16 hex characters. Page titles, URLs and phone lock screens show only this ID.</p>
     <p class="salt"><code>{{.Salt}}</code></p>
-    <div class="alert alert-warn">A new salt changes the ID of every video. Old bookmarks and links then do not work.</div>
+    <div class="alert alert-warn">A new salt changes all public IDs. Old links and bookmarks then do not work.</div>
     <form method="post" action="/admin/privacy/salt" class="inline-form" data-confirm="Change the salt? All video links will change.">
       <label class="grow">New salt<input name="salt" minlength="8" maxlength="256" required autocomplete="off"></label>
       <button class="btn">Save salt</button>
@@ -18,7 +18,11 @@
   </section>
   <section class="panel">
     <h2>Discreet mode</h2>
-    <p>The grid blurs the thumbnails and shows public IDs, not titles. A hover shows the title. This setting is for your account only.</p>
+    <p>For your account only:</p>
+    <ul>
+      <li>The grid blurs thumbnails and names, and shows public IDs.</li>
+      <li>A hover, or the eye button in the top bar, shows the names.</li>
+    </ul>
     <form method="post" action="/settings/discreet">
       <input type="hidden" name="back" value="/admin/privacy">
       <input type="hidden" name="discreet" value="{{if .Discreet}}0{{else}}1{{end}}">

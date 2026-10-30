@@ -259,6 +259,18 @@ func (s *Server) serverError(w http.ResponseWriter, r *http.Request, err error) 
 	http.Error(w, "internal server error", http.StatusInternalServerError)
 }
 
+// sentences formats an error for an alert: each line that errors.Join makes
+// becomes one sentence.
+func sentences(err error) string {
+	lines := strings.Split(err.Error(), "\n")
+	for i, l := range lines {
+		if l != "" {
+			lines[i] = strings.ToUpper(l[:1]) + l[1:] + "."
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
 func (s *Server) notFound(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, http.StatusNotFound, "error", s.newPage(r, "Not found - YAMP", "", "This page does not exist."))
 }

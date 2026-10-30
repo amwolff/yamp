@@ -28,9 +28,9 @@ var funcs = template.FuncMap{
 
 var classHelp = map[string]string{
 	"direct":      "Every browser plays the original file.",
-	"conditional": "Some browsers play the original (HEVC, AV1, VP9); others need a transcode.",
-	"remux":       "The codecs are compatible, the container is not. A copy into MP4 is enough.",
-	"audio":       "The video is compatible; the audio needs a new encode.",
+	"conditional": "Some browsers play the original (HEVC, AV1, VP9). Others need a transcode.",
+	"remux":       "The codecs are compatible, but the container is not. A copy into MP4 is sufficient.",
+	"audio":       "Only the audio needs a new encode.",
 	"transcode":   "The video needs a new encode.",
 }
 

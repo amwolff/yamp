@@ -7,15 +7,15 @@
   <div class="tile"><span class="tile-label">Library size</span><span class="tile-value">{{bytes .Library.Size}}</span></div>
   <div class="tile"><span class="tile-label">Views</span><span class="tile-value">{{.Plays.Views}}</span></div>
   <div class="tile"><span class="tile-label">Watch time</span><span class="tile-value">{{hours .Plays.WatchedMs}}</span></div>
-  <div class="tile"><span class="tile-label">Transcoded files</span><span class="tile-value">{{bytes .Renditions}}</span></div>
-  {{if .CacheFreeOK}}<div class="tile"><span class="tile-label">Free in cache</span><span class="tile-value">{{bytes .CacheFree}}</span></div>{{end}}
+  <div class="tile"><span class="tile-label">Renditions</span><span class="tile-value">{{bytes .Renditions}}</span></div>
+  {{if .CacheFreeOK}}<div class="tile"><span class="tile-label">Free space in cache</span><span class="tile-value">{{bytes .CacheFree}}</span></div>{{end}}
 </div>
 
 <div class="admin-grid">
   <section class="panel">
     <h2>Most viewed</h2>
     {{if .TopViewed}}<ol class="ranked">{{range .TopViewed}}<li><a class="name" href="/v/{{.Pid}}">{{.Title}}</a><span class="muted">{{.Views}}</span></li>{{end}}</ol>
-    {{else}}<p class="muted">No views yet. A play counts after 60 s or a quarter of the video.</p>{{end}}
+    {{else}}<p class="muted">No views yet. A view is 60 s of playback (25 % of a short video).</p>{{end}}
   </section>
   <section class="panel">
     <h2>Highest rated</h2>

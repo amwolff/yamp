@@ -109,7 +109,7 @@ func (p Params) Validate() error {
 		if c, ok := EncoderCodec[p.Encoder]; !ok {
 			errs = append(errs, fmt.Errorf("unknown encoder %q", p.Encoder))
 		} else if c != p.Codec {
-			errs = append(errs, fmt.Errorf("encoder %s does not produce %s", p.Encoder, p.Codec))
+			errs = append(errs, fmt.Errorf("the encoder %s cannot encode %s", p.Encoder, p.Codec))
 		}
 	}
 	maxQ := 51
@@ -117,7 +117,7 @@ func (p Params) Validate() error {
 		maxQ = 63
 	}
 	if p.Quality < 1 || p.Quality > maxQ {
-		errs = append(errs, fmt.Errorf("quality must be from 1 to %d", maxQ))
+		errs = append(errs, fmt.Errorf("the quality must be from 1 to %d", maxQ))
 	}
 	if p.MaxBitrateK < 0 || p.MaxBitrateK > 200_000 {
 		errs = append(errs, errors.New("the maximum bitrate must be from 0 to 200000 kbit/s"))
@@ -134,7 +134,7 @@ func (p Params) Validate() error {
 		errs = append(errs, errors.New("the maximum frame rate must be from 0 to 240"))
 	}
 	if p.TenBit && p.Codec == "h264" {
-		errs = append(errs, errors.New("10-bit output is not compatible with browsers for H.264"))
+		errs = append(errs, errors.New("browsers do not play 10-bit H.264"))
 	}
 	if p.AudioBitrateK < 32 || p.AudioBitrateK > 512 {
 		errs = append(errs, errors.New("the audio bitrate must be from 32 to 512 kbit/s"))

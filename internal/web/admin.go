@@ -52,9 +52,9 @@ func (s *Server) handleScanStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleScan(w http.ResponseWriter, r *http.Request) {
-	msg := "The scan started."
+	msg := "Scan started."
 	if !s.Scanner.Trigger() {
-		msg = "A scan is already pending."
+		msg = "A scan is already in the queue."
 	}
 	s.redirectFlash(w, r, "/admin/library", msg)
 }
@@ -69,7 +69,7 @@ func (s *Server) handleScanInterval(w http.ResponseWriter, r *http.Request) {
 		s.serverError(w, r, err)
 		return
 	}
-	s.redirectFlash(w, r, "/admin/library", "Saved. The new interval applies after the next scan.")
+	s.redirectFlash(w, r, "/admin/library", "Saved. The new interval starts after the next scan.")
 }
 
 // ---- Transcoding ----
@@ -187,7 +187,7 @@ func (s *Server) profileError(w http.ResponseWriter, r *http.Request, err error)
 	}
 	d.link()
 	p := s.newPage(r, "Admin - YAMP", "transcoding", d)
-	p.Error = err.Error()
+	p.Error = sentences(err)
 	s.render(w, r, http.StatusBadRequest, "admin_transcoding", p)
 }
 
@@ -196,7 +196,7 @@ func (s *Server) handleProfileCreate(w http.ResponseWriter, r *http.Request) {
 		s.profileError(w, r, err)
 		return
 	}
-	s.redirectFlash(w, r, "/admin/transcoding", "The profile was added.")
+	s.redirectFlash(w, r, "/admin/transcoding", "Profile added.")
 }
 
 func pathID(r *http.Request) (int64, bool) {
@@ -214,7 +214,7 @@ func (s *Server) handleProfileUpdate(w http.ResponseWriter, r *http.Request) {
 		s.profileError(w, r, err)
 		return
 	}
-	s.redirectFlash(w, r, "/admin/transcoding", "The profile was saved. Renditions made with other parameters are now stale.")
+	s.redirectFlash(w, r, "/admin/transcoding", "Profile saved. Renditions with other parameters are now stale.")
 }
 
 func (s *Server) handleProfileDelete(w http.ResponseWriter, r *http.Request) {
@@ -227,7 +227,7 @@ func (s *Server) handleProfileDelete(w http.ResponseWriter, r *http.Request) {
 		s.serverError(w, r, err)
 		return
 	}
-	s.redirectFlash(w, r, "/admin/transcoding", "The profile and its renditions were deleted.")
+	s.redirectFlash(w, r, "/admin/transcoding", "Profile and its renditions deleted.")
 }
 
 func (s *Server) handleProfileRetranscode(w http.ResponseWriter, r *http.Request) {
@@ -241,13 +241,13 @@ func (s *Server) handleProfileRetranscode(w http.ResponseWriter, r *http.Request
 		s.serverError(w, r, err)
 		return
 	}
-	s.redirectFlash(w, r, "/admin/jobs", fmt.Sprintf("%d jobs were added to the queue.", n))
+	s.redirectFlash(w, r, "/admin/jobs", fmt.Sprintf("Jobs added to the queue: %d.", n))
 }
 
 func (s *Server) handleWorkers(w http.ResponseWriter, r *http.Request) {
 	n, err := strconv.Atoi(r.PostFormValue("workers"))
 	if err != nil || n < 1 || n > 8 {
-		s.redirectFlash(w, r, "/admin/transcoding", "The number of workers must be from 1 to 8.")
+		s.redirectFlash(w, r, "/admin/transcoding", "The number of parallel jobs must be from 1 to 8.")
 		return
 	}
 	if err := s.Settings.Set(r.Context(), settings.KeyWorkers, strconv.Itoa(n)); err != nil {
@@ -259,7 +259,7 @@ func (s *Server) handleWorkers(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleAutoEnqueue(w http.ResponseWriter, r *http.Request) {
 	s.Queue.AutoEnqueue(r.Context())
-	s.redirectFlash(w, r, "/admin/jobs", "The profile policies were applied to the library.")
+	s.redirectFlash(w, r, "/admin/jobs", "Profile policies applied.")
 }
 
 // ---- Jobs ----
@@ -314,7 +314,7 @@ func (s *Server) handleJobCancel(w http.ResponseWriter, r *http.Request) {
 		s.serverError(w, r, err)
 		return
 	}
-	s.redirectFlash(w, r, backTo(r, "/admin/jobs"), "The job was canceled.")
+	s.redirectFlash(w, r, backTo(r, "/admin/jobs"), "Job canceled.")
 }
 
 func (s *Server) handleJobRetry(w http.ResponseWriter, r *http.Request) {
@@ -420,14 +420,14 @@ func (s *Server) handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleUserCreate(w http.ResponseWriter, r *http.Request) {
 	if err := s.Auth.CreateUser(r.Context(), r.PostFormValue("username"), r.PostFormValue("password")); err != nil {
-		msg := err.Error()
+		msg := sentences(err)
 		if strings.Contains(msg, "UNIQUE") {
-			msg = "A user with this name already exists."
+			msg = "There is already a user with this name."
 		}
 		s.usersPage(w, r, http.StatusBadRequest, msg, r.PostFormValue("username"))
 		return
 	}
-	s.redirectFlash(w, r, "/admin/users", "The user was added.")
+	s.redirectFlash(w, r, "/admin/users", "User added.")
 }
 
 func (s *Server) handleUserPassword(w http.ResponseWriter, r *http.Request) {
@@ -443,10 +443,10 @@ func (s *Server) handleUserPassword(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err := s.Auth.SetPassword(r.Context(), id, r.PostFormValue("password"), keep); err != nil {
-		s.usersPage(w, r, http.StatusBadRequest, err.Error(), "")
+		s.usersPage(w, r, http.StatusBadRequest, sentences(err), "")
 		return
 	}
-	s.redirectFlash(w, r, "/admin/users", "The password was changed. Other sessions of this user ended.")
+	s.redirectFlash(w, r, "/admin/users", "Password changed. Other sessions of the user ended.")
 }
 
 func (s *Server) handleUserDelete(w http.ResponseWriter, r *http.Request) {
@@ -472,7 +472,7 @@ func (s *Server) handleUserDelete(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	s.redirectFlash(w, r, "/admin/users", "The user was deleted.")
+	s.redirectFlash(w, r, "/admin/users", "User deleted.")
 }
 
 // ---- Privacy ----
@@ -502,7 +502,7 @@ func (s *Server) handleSalt(w http.ResponseWriter, r *http.Request) {
 	}
 	s.Settings.SetCached(settings.KeySalt, salt)
 	s.Log.Info("salt changed; all public IDs changed")
-	s.redirectFlash(w, r, "/admin/privacy", "The salt was changed. All video links changed.")
+	s.redirectFlash(w, r, "/admin/privacy", "Salt changed. All video links are new.")
 }
 
 // ---- Server-sent events ----

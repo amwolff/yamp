@@ -38,7 +38,7 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, auth.ErrSetupDone):
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 	case err != nil:
-		p.Error = err.Error()
+		p.Error = sentences(err)
 		s.render(w, r, http.StatusBadRequest, "login", p)
 	default:
 		s.Log.Info("first user created", "username", username)
@@ -70,7 +70,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case errors.Is(err, auth.ErrRateLimited):
 		status = http.StatusTooManyRequests
-		p.Error = err.Error()
+		p.Error = sentences(err)
 	case errors.Is(err, auth.ErrBadCredentials):
 		p.Error = "Wrong username or password."
 	default:

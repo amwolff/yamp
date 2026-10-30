@@ -9,8 +9,8 @@
       {{end}}
     </video>
     <div class="unplayable" id="unplayable"{{if .Sources}} hidden{{end}}>
-      <p><strong>This video cannot play on this device yet.</strong></p>
-      <p class="muted">The browser cannot decode the original file and there is no compatible version.</p>
+      <p><strong>This browser cannot play the video.</strong></p>
+      <p class="muted">Transcode it to make a compatible rendition.</p>
       {{template "transcode-form" .Unplayable}}
     </div>
   </div>
@@ -31,7 +31,7 @@
     {{template "watch-status" .Status}}
 
     <details class="panel details">
-      <summary>Technical details and versions</summary>
+      <summary>Technical data and renditions</summary>
       <dl class="kv">
         <dt>Size</dt><dd>{{bytes .Media.Size}}</dd>
         <dt>Container</dt><dd>{{.Media.Container}}</dd>
@@ -42,15 +42,15 @@
       </dl>
       {{if .Renditions}}
       <div class="table-wrap"><table class="table">
-        <thead><tr><th>Version</th><th>Resolution</th><th>Codecs</th><th>Size</th></tr></thead>
+        <thead><tr><th>Rendition</th><th>Resolution</th><th>Codecs</th><th>Size</th></tr></thead>
         <tbody>
         {{range .Renditions}}<tr>
-          <td>{{.ProfileName}}{{if .Stale}} <span class="state state-stale" title="The profile changed after this transcode">stale</span>{{end}}</td>
+          <td>{{.ProfileName}}{{if .Stale}} <span class="state state-stale" title="The profile changed after the transcode.">stale</span>{{end}}</td>
           <td>{{.Width}}×{{.Height}}</td><td><code>{{.Codecs}}</code></td><td>{{bytes .Size}}</td>
         </tr>{{end}}
         </tbody>
       </table></div>
-      {{else}}<p class="muted">There are no transcoded versions.</p>{{end}}
+      {{else}}<p class="muted">No renditions.</p>{{end}}
       {{template "transcode-form" .Transcode}}
     </details>
   </section>
@@ -77,11 +77,11 @@
 <div class="job-status"{{if .Polling}} hx-get="/v/{{.PID}}/status" hx-trigger="every 2s" hx-swap="outerHTML"{{end}}>
   {{with .Active}}
   <div class="notice">
-    <div><strong>{{if eq .State "queued"}}Waiting in the queue{{else if eq .Phase "finalize"}}Finishing the file{{else}}Transcoding{{end}}</strong> · {{.Profile}}{{with .Encoder}} · {{.}}{{end}}</div>
+    <div><strong>{{if eq .State "queued"}}In the queue{{else if eq .Phase "finalize"}}Final step{{else}}Transcode in progress{{end}}</strong> · {{.Profile}}{{with .Encoder}} · {{.}}{{end}}</div>
     {{if eq .State "running"}}<div class="progress-row"><progress max="100" value="{{percent .Progress}}"></progress><span>{{percent .Progress}}%{{with .Speed}} · {{printf "%.1f" .}}×{{end}}</span></div>{{end}}
   </div>
   {{end}}
-  {{if .Ready}}<div class="notice notice-ok">A new version is ready. <a href="/v/{{.PID}}">Reload the page</a> to play it.</div>{{end}}
-  {{if not .Active}}{{with .Last}}{{if eq .State "failed"}}<div class="notice notice-err">The last transcode failed. <a href="/admin/jobs">Open the job list</a> for the error.</div>{{end}}{{end}}{{end}}
+  {{if .Ready}}<div class="notice notice-ok">A new rendition is ready. <a href="/v/{{.PID}}">Reload the page</a> to play it.</div>{{end}}
+  {{if not .Active}}{{with .Last}}{{if eq .State "failed"}}<div class="notice notice-err">The last transcode failed. The <a href="/admin/jobs">job list</a> shows the error.</div>{{end}}{{end}}{{end}}
 </div>
 {{end}}

@@ -13,7 +13,7 @@
       </tr>{{end}}
       </tbody>
     </table>
-    <p class="muted small">YAMP encodes three test frames with each encoder at startup. HDR tone mapping: {{if .Caps.CanTonemap}}available (zscale){{else}}<strong>unavailable</strong> (this ffmpeg has no zscale){{end}}.</p>
+    <p class="muted small">At startup, YAMP encodes three test frames with each encoder. HDR to SDR tone map: {{if .Caps.CanTonemap}}available (zscale){{else}}<strong>unavailable</strong> (this ffmpeg has no zscale){{end}}.</p>
   </section>
 
   <section class="panel">
@@ -23,7 +23,11 @@
       <button class="btn btn-ghost">Save</button>
     </form>
     <form method="post" action="/admin/enqueue"><button class="btn btn-ghost">Apply profile policies now</button></form>
-    <p class="muted small"><strong>when-needed</strong> profiles transcode every video that is not <em>direct</em>. <strong>always</strong> profiles transcode every video. <strong>manual</strong> profiles transcode only on request.</p>
+    <ul class="plain muted small">
+      <li><strong>manual</strong>: transcode on request only.</li>
+      <li><strong>when-needed</strong>: transcode each video that is not <em>direct</em>.</li>
+      <li><strong>always</strong>: transcode each video.</li>
+    </ul>
   </section>
 </div>
 
@@ -41,8 +45,8 @@
     <div class="form-actions"><button class="btn">Save</button></div>
   </form>
   <div class="form-actions">
-    {{if .P.Stale}}<form method="post" action="/admin/profiles/{{.P.ID}}/retranscode"><button class="btn btn-ghost">Transcode {{.P.Stale}} stale versions again</button></form>{{end}}
-    <form method="post" action="/admin/profiles/{{.P.ID}}/delete" data-confirm="Delete the profile {{.P.Name}} and all its transcoded files?"><button class="btn btn-danger">Delete</button></form>
+    {{if .P.Stale}}<form method="post" action="/admin/profiles/{{.P.ID}}/retranscode"><button class="btn btn-ghost">Transcode {{.P.Stale}} stale renditions again</button></form>{{end}}
+    <form method="post" action="/admin/profiles/{{.P.ID}}/delete" data-confirm="Delete the profile {{.P.Name}} and all its renditions?"><button class="btn btn-danger">Delete</button></form>
   </div>
 </details>
 {{end}}
@@ -69,10 +73,10 @@
   <label>Codec<select name="codec">{{range .Opts.Codecs}}<option{{if eq . $.P.Params.Codec}} selected{{end}}>{{.}}</option>{{end}}</select></label>
   <label>Encoder<select name="encoder">{{range .Opts.Encoders}}<option value="{{.}}"{{if eq . $.P.Params.Encoder}} selected{{end}}>{{.}}{{if not (encoderOK $.Opts.Caps .)}} (unavailable){{end}}</option>{{end}}</select></label>
   <label>Quality (CRF, lower is better)<input type="number" name="quality" min="1" max="63" value="{{.P.Params.Quality}}"></label>
-  <label>Maximum bitrate (kbit/s, 0 = none)<input type="number" name="max_bitrate_k" min="0" max="200000" step="100" value="{{.P.Params.MaxBitrateK}}"></label>
+  <label>Maximum bitrate (kbit/s, 0 = no limit)<input type="number" name="max_bitrate_k" min="0" max="200000" step="100" value="{{.P.Params.MaxBitrateK}}"></label>
   <label>Preset<select name="preset">{{range .Opts.Presets}}<option value="{{.}}"{{if eq . $.P.Params.Preset}} selected{{end}}>{{if .}}{{.}}{{else}}default{{end}}</option>{{end}}</select></label>
   <label>Maximum height<select name="max_height">{{range .Opts.Heights}}<option value="{{.}}"{{if eq . $.P.Params.MaxHeight}} selected{{end}}>{{if .}}{{.}}p{{else}}no limit{{end}}</option>{{end}}</select></label>
-  <label>Maximum frame rate (0 = none)<input type="number" name="max_fps" min="0" max="240" value="{{.P.Params.MaxFPS}}"></label>
+  <label>Maximum frame rate (0 = no limit)<input type="number" name="max_fps" min="0" max="240" value="{{.P.Params.MaxFPS}}"></label>
   <label>Audio bitrate (kbit/s)<input type="number" name="audio_bitrate_k" min="32" max="512" value="{{.P.Params.AudioBitrateK}}"></label>
   <label>Preferred audio language<input name="audio_lang" maxlength="3" placeholder="eng" value="{{.P.Params.AudioLang}}"></label>
   <label class="check"><input type="checkbox" name="stereo" value="1"{{if .P.Params.Stereo}} checked{{end}}> Stereo downmix</label>
