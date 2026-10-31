@@ -94,6 +94,8 @@ img { display: block; max-width: 100%; }
 .logo { width: 28px; height: 28px; flex: none; }
 .logo-bg { fill: var(--accent-strong); }
 .logo-fg { fill: #fff; }
+.logo-ink { fill: #0a1020; }
+.logo-line { fill: none; stroke: var(--accent-strong); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .topnav { display: flex; gap: 4px; margin-right: auto; }
 .topnav a {
   color: var(--muted); padding: 6px 12px; border-radius: 999px; font-weight: 550;
