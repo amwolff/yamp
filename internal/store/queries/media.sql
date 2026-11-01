@@ -37,6 +37,9 @@ UPDATE media SET status = ?, updated_at = ? WHERE id = ?;
 -- name: SetMediaThumb :exec
 UPDATE media SET has_thumb = ? WHERE id = ?;
 
+-- name: SetMediaDuration :exec
+UPDATE media SET duration_ms = ? WHERE id = ?;
+
 -- name: GetMedia :one
 SELECT * FROM media WHERE id = ?;
 

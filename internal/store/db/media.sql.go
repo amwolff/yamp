@@ -406,6 +406,20 @@ func (q *Queries) ListSubtitles(ctx context.Context, mediaID int64) ([]Subtitle,
 	return items, nil
 }
 
+const setMediaDuration = `-- name: SetMediaDuration :exec
+UPDATE media SET duration_ms = ? WHERE id = ?
+`
+
+type SetMediaDurationParams struct {
+	DurationMs int64
+	ID         int64
+}
+
+func (q *Queries) SetMediaDuration(ctx context.Context, arg SetMediaDurationParams) error {
+	_, err := q.db.ExecContext(ctx, setMediaDuration, arg.DurationMs, arg.ID)
+	return err
+}
+
 const setMediaStatus = `-- name: SetMediaStatus :exec
 UPDATE media SET status = ?, updated_at = ? WHERE id = ?
 `

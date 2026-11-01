@@ -187,8 +187,13 @@ func TestQueueEndToEnd(t *testing.T) {
 	}
 
 	// A damaged rendition goes back into the queue at the next start.
+	// The new copy also corrects a wrong duration from the source's header.
 	total := len(got) + len(fallback)
-	if err = os.Truncate(got[testutil.MKV].Path, 10); err != nil {
+	mkv := got[testutil.MKV]
+	if err = os.Truncate(mkv.Path, 10); err != nil {
+		t.Fatal(err)
+	}
+	if err = e.st.SetMediaDuration(ctx, db.SetMediaDurationParams{DurationMs: 5_000_000, ID: mkv.MediaID}); err != nil {
 		t.Fatal(err)
 	}
 	if err = e.queue.Recover(ctx); err != nil {
@@ -200,6 +205,9 @@ func TestQueueEndToEnd(t *testing.T) {
 	e.waitIdle(t, time.Minute)
 	if again, _ := e.st.ListAllRenditions(ctx); len(again) != total {
 		t.Fatalf("damaged rendition not made again: %d rows", len(again))
+	}
+	if m, _ := e.st.GetMedia(ctx, mkv.MediaID); m.DurationMs < 4_900 || m.DurationMs > 5_200 {
+		t.Fatalf("duration = %d ms, want about 5000", m.DurationMs)
 	}
 
 	// A profile change marks the renditions stale; a re-transcode replaces them

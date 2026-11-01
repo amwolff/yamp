@@ -376,6 +376,13 @@ func (q *Queue) runJob(ctx context.Context, job db.ClaimJobRow) error {
 		if insErr != nil {
 			return insErr
 		}
+		// The source's container header can give a wrong duration; the output's
+		// comes from its own timestamps.
+		if d := out.Duration().Milliseconds(); d > 0 && d != m.DurationMs {
+			if setErr := tq.SetMediaDuration(ctx, db.SetMediaDurationParams{DurationMs: d, ID: m.ID}); setErr != nil {
+				return setErr
+			}
+		}
 		var listErr error
 		replaced, listErr = tq.ListReplacedRenditions(ctx, db.ListReplacedRenditionsParams{MediaID: m.ID, ProfileID: prof.ID, ID: id})
 		if listErr != nil {
