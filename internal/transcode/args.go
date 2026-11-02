@@ -130,7 +130,7 @@ func BuildArgs(in Input) (Plan, error) {
 
 // canCopyVideo reports whether the source video already meets the profile.
 func canCopyVideo(r *probe.Result, v *probe.Stream, p Params) bool {
-	if p.VideoMode != VideoCopyIfCompatible {
+	if p.VideoMode != VideoCopyIfCompatible || !probe.CopyKeepsOrder(r, v) {
 		return false
 	}
 	switch p.Codec {

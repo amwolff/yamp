@@ -321,6 +321,12 @@ func TestCopyDecisions(t *testing.T) {
 			}
 		})
 	}
+
+	r := result(stream("h264", func(s *probe.Stream) { s.HasBFrames = 2 }))
+	r.Format.FormatName = "avi"
+	if canCopyVideo(r, r.Video(), apple) {
+		t.Fatal("copied H.264 with B-frames from AVI")
+	}
 }
 
 func TestBuildArgsNoEncoder(t *testing.T) {

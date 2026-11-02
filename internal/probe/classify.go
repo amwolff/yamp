@@ -117,7 +117,7 @@ func Classify(r *Result, path string, moovFirst bool) (Analysis, error) {
 
 	isMP4 := a.Container == ContainerMP4
 	switch {
-	case H264Compatible(a.Video):
+	case H264Compatible(a.Video) && CopyKeepsOrder(r, a.Video):
 		switch {
 		case !AACCompatible(a.Audio):
 			a.Class = AudioOnly
@@ -140,6 +140,11 @@ func Classify(r *Result, path string, moovFirst bool) (Analysis, error) {
 		}
 	}
 	return a, nil
+}
+
+// CopyKeepsOrder is false for B-frames in AVI, which stores no display times.
+func CopyKeepsOrder(r *Result, v *Stream) bool {
+	return r.Format.FormatName != "avi" || v.HasBFrames == 0
 }
 
 func conditionalMP4Video(v *Stream) bool {

@@ -143,6 +143,8 @@ func TestClassify(t *testing.T) {
 	interlaced.FieldOrder = "tt"
 	hdr := h264
 	hdr.ColorTransfer = "smpte2084"
+	bframes := h264
+	bframes.HasBFrames = 2
 	hvc1 := Stream{CodecType: "video", CodecName: "hevc", CodecTagString: "hvc1", PixFmt: "yuv420p10le", Profile: "Main 10", Level: 120}
 	hev1 := hvc1
 	hev1.CodecTagString = "hev1"
@@ -156,9 +158,11 @@ func TestClassify(t *testing.T) {
 	aacMain.Profile = "Main"
 	ac3 := Stream{CodecType: "audio", CodecName: "ac3"}
 	opus := Stream{CodecType: "audio", CodecName: "opus"}
+	mp3 := Stream{CodecType: "audio", CodecName: "mp3"}
 
 	mp4 := Format{FormatName: "mov,mp4,m4a,3gp,3g2,mj2", Tags: map[string]string{"major_brand": "isom"}}
 	mkv := Format{FormatName: "matroska,webm"}
+	avi := Format{FormatName: "avi"}
 
 	tests := []struct {
 		name      string
@@ -177,6 +181,9 @@ func TestClassify(t *testing.T) {
 		{"mkv h264 ac3", "a.mkv", mkv, []Stream{h264, ac3}, false, AudioOnly, ""},
 		{"mp4 h264 ac3", "a.mp4", mp4, []Stream{h264, ac3}, true, AudioOnly, ""},
 		{"mp4 h264 aac main", "a.mp4", mp4, []Stream{h264, aacMain}, true, AudioOnly, ""},
+		{"avi h264 mp3", "a.avi", avi, []Stream{h264, mp3}, false, AudioOnly, ""},
+		{"avi b-frames", "a.avi", avi, []Stream{bframes, mp3}, false, Transcode, ""},
+		{"mkv b-frames", "a.mkv", mkv, []Stream{bframes, aac}, false, Remux, ""},
 		{"hi10p", "a.mkv", mkv, []Stream{h264hi10, aac}, false, Transcode, ""},
 		{"interlaced", "a.mp4", mp4, []Stream{interlaced, aac}, true, Transcode, ""},
 		{"hdr", "a.mp4", mp4, []Stream{hdr, aac}, true, Transcode, ""},

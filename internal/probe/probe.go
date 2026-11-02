@@ -42,6 +42,7 @@ type Stream struct {
 	Width            int               `json:"width"`
 	Height           int               `json:"height"`
 	FieldOrder       string            `json:"field_order"`
+	HasBFrames       int               `json:"has_b_frames"`
 	ColorTransfer    string            `json:"color_transfer"`
 	ColorPrimaries   string            `json:"color_primaries"`
 	Channels         int               `json:"channels"`
