@@ -4,26 +4,38 @@ SELECT id, path, size, mtime_ns, fingerprint, status, has_thumb FROM media;
 -- name: GetMediaByFingerprint :one
 SELECT id, path, status FROM media WHERE fingerprint = ?;
 
+-- InsertMedia leaves the columns of SetMediaInfo empty.
 -- name: InsertMedia :one
 INSERT INTO media (
     path, root, rel_dir, title, size, mtime_ns, fingerprint, pid,
-    duration_ms, container, width, height, video_codec, audio_codec,
-    mime, codecs, hdr, playability, probe_json, added_at, updated_at
+    duration_ms, probe_json, added_at, updated_at,
+    container, width, height, video_codec, audio_codec, mime, codecs, hdr, playability
 ) VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?,
+    '', 0, 0, '', '', '', '', 0, ''
 )
 RETURNING id;
 
 -- name: UpdateMediaContent :exec
 UPDATE media SET
     path = ?, root = ?, rel_dir = ?, title = ?, size = ?, mtime_ns = ?,
-    fingerprint = ?, pid = ?, duration_ms = ?, container = ?, width = ?,
-    height = ?, video_codec = ?, audio_codec = ?, mime = ?, codecs = ?,
-    hdr = ?, playability = ?, probe_json = ?, has_thumb = 0, status = 'ok',
-    updated_at = ?
+    fingerprint = ?, pid = ?, duration_ms = ?, probe_json = ?, has_thumb = 0,
+    status = 'ok', updated_at = ?
 WHERE id = ?;
+
+-- SetMediaInfo saves what a scan derives from the probe.
+-- name: SetMediaInfo :exec
+UPDATE media SET
+    container = ?, width = ?, height = ?, video_codec = ?, audio_codec = ?,
+    mime = ?, codecs = ?, hdr = ?, playability = ?
+WHERE id = ?;
+
+-- GetMediaInfo reads the columns of SetMediaInfo in the same order, so its row
+-- converts to SetMediaInfoParams.
+-- name: GetMediaInfo :one
+SELECT container, width, height, video_codec, audio_codec, mime, codecs, hdr, playability, id
+FROM media WHERE id = ?;
 
 -- name: UpdateMediaLocation :exec
 UPDATE media SET

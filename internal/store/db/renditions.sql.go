@@ -356,6 +356,16 @@ func (q *Queries) ListStaleMediaForProfile(ctx context.Context, profileID int64)
 	return items, nil
 }
 
+const markRenditionsStale = `-- name: MarkRenditionsStale :exec
+UPDATE renditions SET params_hash = '' WHERE media_id = ?
+`
+
+// An empty params_hash marks a rendition stale; AutoEnqueue replaces it.
+func (q *Queries) MarkRenditionsStale(ctx context.Context, mediaID int64) error {
+	_, err := q.db.ExecContext(ctx, markRenditionsStale, mediaID)
+	return err
+}
+
 const sumRenditionSize = `-- name: SumRenditionSize :one
 SELECT CAST(COALESCE(SUM(size), 0) AS INTEGER) FROM renditions
 `

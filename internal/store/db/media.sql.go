@@ -151,6 +151,44 @@ func (q *Queries) GetMediaByPID(ctx context.Context, pid string) (Medium, error)
 	return i, err
 }
 
+const getMediaInfo = `-- name: GetMediaInfo :one
+SELECT container, width, height, video_codec, audio_codec, mime, codecs, hdr, playability, id
+FROM media WHERE id = ?
+`
+
+type GetMediaInfoRow struct {
+	Container   string
+	Width       int64
+	Height      int64
+	VideoCodec  string
+	AudioCodec  string
+	Mime        string
+	Codecs      string
+	Hdr         int64
+	Playability string
+	ID          int64
+}
+
+// GetMediaInfo reads the columns of SetMediaInfo in the same order, so its row
+// converts to SetMediaInfoParams.
+func (q *Queries) GetMediaInfo(ctx context.Context, id int64) (GetMediaInfoRow, error) {
+	row := q.db.QueryRowContext(ctx, getMediaInfo, id)
+	var i GetMediaInfoRow
+	err := row.Scan(
+		&i.Container,
+		&i.Width,
+		&i.Height,
+		&i.VideoCodec,
+		&i.AudioCodec,
+		&i.Mime,
+		&i.Codecs,
+		&i.Hdr,
+		&i.Playability,
+		&i.ID,
+	)
+	return i, err
+}
+
 const getSubtitle = `-- name: GetSubtitle :one
 SELECT id, media_id, stream_index, lang, label, path FROM subtitles WHERE id = ? AND media_id = ?
 `
@@ -177,12 +215,12 @@ func (q *Queries) GetSubtitle(ctx context.Context, arg GetSubtitleParams) (Subti
 const insertMedia = `-- name: InsertMedia :one
 INSERT INTO media (
     path, root, rel_dir, title, size, mtime_ns, fingerprint, pid,
-    duration_ms, container, width, height, video_codec, audio_codec,
-    mime, codecs, hdr, playability, probe_json, added_at, updated_at
+    duration_ms, probe_json, added_at, updated_at,
+    container, width, height, video_codec, audio_codec, mime, codecs, hdr, playability
 ) VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?,
+    '', 0, 0, '', '', '', '', 0, ''
 )
 RETURNING id
 `
@@ -197,20 +235,12 @@ type InsertMediaParams struct {
 	Fingerprint []byte
 	Pid         string
 	DurationMs  int64
-	Container   string
-	Width       int64
-	Height      int64
-	VideoCodec  string
-	AudioCodec  string
-	Mime        string
-	Codecs      string
-	Hdr         int64
-	Playability string
 	ProbeJson   string
 	AddedAt     int64
 	UpdatedAt   int64
 }
 
+// InsertMedia leaves the columns of SetMediaInfo empty.
 func (q *Queries) InsertMedia(ctx context.Context, arg InsertMediaParams) (int64, error) {
 	row := q.db.QueryRowContext(ctx, insertMedia,
 		arg.Path,
@@ -222,15 +252,6 @@ func (q *Queries) InsertMedia(ctx context.Context, arg InsertMediaParams) (int64
 		arg.Fingerprint,
 		arg.Pid,
 		arg.DurationMs,
-		arg.Container,
-		arg.Width,
-		arg.Height,
-		arg.VideoCodec,
-		arg.AudioCodec,
-		arg.Mime,
-		arg.Codecs,
-		arg.Hdr,
-		arg.Playability,
 		arg.ProbeJson,
 		arg.AddedAt,
 		arg.UpdatedAt,
@@ -420,6 +441,43 @@ func (q *Queries) SetMediaDuration(ctx context.Context, arg SetMediaDurationPara
 	return err
 }
 
+const setMediaInfo = `-- name: SetMediaInfo :exec
+UPDATE media SET
+    container = ?, width = ?, height = ?, video_codec = ?, audio_codec = ?,
+    mime = ?, codecs = ?, hdr = ?, playability = ?
+WHERE id = ?
+`
+
+type SetMediaInfoParams struct {
+	Container   string
+	Width       int64
+	Height      int64
+	VideoCodec  string
+	AudioCodec  string
+	Mime        string
+	Codecs      string
+	Hdr         int64
+	Playability string
+	ID          int64
+}
+
+// SetMediaInfo saves what a scan derives from the probe.
+func (q *Queries) SetMediaInfo(ctx context.Context, arg SetMediaInfoParams) error {
+	_, err := q.db.ExecContext(ctx, setMediaInfo,
+		arg.Container,
+		arg.Width,
+		arg.Height,
+		arg.VideoCodec,
+		arg.AudioCodec,
+		arg.Mime,
+		arg.Codecs,
+		arg.Hdr,
+		arg.Playability,
+		arg.ID,
+	)
+	return err
+}
+
 const setMediaStatus = `-- name: SetMediaStatus :exec
 UPDATE media SET status = ?, updated_at = ? WHERE id = ?
 `
@@ -452,10 +510,8 @@ func (q *Queries) SetMediaThumb(ctx context.Context, arg SetMediaThumbParams) er
 const updateMediaContent = `-- name: UpdateMediaContent :exec
 UPDATE media SET
     path = ?, root = ?, rel_dir = ?, title = ?, size = ?, mtime_ns = ?,
-    fingerprint = ?, pid = ?, duration_ms = ?, container = ?, width = ?,
-    height = ?, video_codec = ?, audio_codec = ?, mime = ?, codecs = ?,
-    hdr = ?, playability = ?, probe_json = ?, has_thumb = 0, status = 'ok',
-    updated_at = ?
+    fingerprint = ?, pid = ?, duration_ms = ?, probe_json = ?, has_thumb = 0,
+    status = 'ok', updated_at = ?
 WHERE id = ?
 `
 
@@ -469,15 +525,6 @@ type UpdateMediaContentParams struct {
 	Fingerprint []byte
 	Pid         string
 	DurationMs  int64
-	Container   string
-	Width       int64
-	Height      int64
-	VideoCodec  string
-	AudioCodec  string
-	Mime        string
-	Codecs      string
-	Hdr         int64
-	Playability string
 	ProbeJson   string
 	UpdatedAt   int64
 	ID          int64
@@ -494,15 +541,6 @@ func (q *Queries) UpdateMediaContent(ctx context.Context, arg UpdateMediaContent
 		arg.Fingerprint,
 		arg.Pid,
 		arg.DurationMs,
-		arg.Container,
-		arg.Width,
-		arg.Height,
-		arg.VideoCodec,
-		arg.AudioCodec,
-		arg.Mime,
-		arg.Codecs,
-		arg.Hdr,
-		arg.Playability,
 		arg.ProbeJson,
 		arg.UpdatedAt,
 		arg.ID,

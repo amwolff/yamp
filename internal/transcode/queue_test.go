@@ -240,6 +240,35 @@ func TestQueueEndToEnd(t *testing.T) {
 			t.Errorf("replaced rendition file %s still exists", r.Path)
 		}
 	}
+
+	// A scan that derives a field differently queues the file again like a new
+	// one. The manual H.264 rendition stays stale.
+	prev := e.renditions(t, apple.ID)[testutil.AC3]
+	stored, getErr := e.st.GetMediaInfo(ctx, prev.MediaID)
+	if getErr != nil {
+		t.Fatal(getErr)
+	}
+	changed := db.SetMediaInfoParams(stored)
+	changed.Codecs = "avc1.64001F, mp4a.40.2"
+	if err := e.st.SetMediaInfo(ctx, changed); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.scanner.Scan(ctx); err != nil {
+		t.Fatal(err)
+	}
+	e.waitIdle(t, time.Minute)
+	if got, _ := e.st.GetMediaInfo(ctx, prev.MediaID); got != stored {
+		t.Fatalf("media info = %+v, want %+v", got, stored)
+	}
+	if r := e.renditions(t, apple.ID)[testutil.AC3]; r.ID == prev.ID {
+		t.Fatal("Apple rendition not replaced")
+	}
+	if _, err := os.Stat(prev.Path); !os.IsNotExist(err) {
+		t.Errorf("replaced rendition file %s still exists", prev.Path)
+	}
+	if stale, _ := e.st.CountStaleRenditions(ctx); len(stale) != 1 || stale[0].ProfileID != compat.ID || stale[0].N != 1 {
+		t.Fatalf("stale = %+v, want one H.264 rendition", stale)
+	}
 }
 
 // probeOutput checks what every rendition shares and returns the probe.

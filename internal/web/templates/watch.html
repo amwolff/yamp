@@ -45,7 +45,7 @@
         <thead><tr><th>Rendition</th><th>Resolution</th><th>Codecs</th><th>Size</th></tr></thead>
         <tbody>
         {{range .Renditions}}<tr>
-          <td>{{.ProfileName}}{{if .Stale}} <span class="state state-stale" title="The profile changed after the transcode.">stale</span>{{end}}</td>
+          <td>{{.ProfileName}}{{if .Stale}} <span class="state state-stale" title="The profile or YAMP changed after the transcode.">stale</span>{{end}}</td>
           <td>{{.Width}}×{{.Height}}</td><td><code>{{.Codecs}}</code></td><td>{{bytes .Size}}</td>
         </tr>{{end}}
         </tbody>

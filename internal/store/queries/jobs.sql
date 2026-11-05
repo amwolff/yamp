@@ -5,7 +5,7 @@ VALUES (?, ?, 'queued', ?, ?);
 -- AutoEnqueue queues each (media, profile) pair that the policy selects and
 -- that has no rendition and no unfinished job. Failed and canceled jobs need a
 -- manual retry. A when-needed profile skips direct files and conditional files
--- in its codec.
+-- in its codec. A rendition with an empty params_hash counts as missing.
 -- name: AutoEnqueue :execrows
 INSERT OR IGNORE INTO jobs (media_id, profile_id, state, priority, created_at)
 SELECT m.id, p.id, 'queued', p.priority, ?
@@ -16,7 +16,9 @@ WHERE m.status = 'ok'
         AND m.playability != 'direct'
         AND NOT (m.playability = 'conditional' AND m.video_codec = json_extract(p.params_json, '$.codec'))
     ))
-    AND NOT EXISTS (SELECT 1 FROM renditions r WHERE r.media_id = m.id AND r.profile_id = p.id)
+    AND NOT EXISTS (
+        SELECT 1 FROM renditions r WHERE r.media_id = m.id AND r.profile_id = p.id AND r.params_hash != ''
+    )
     AND NOT EXISTS (SELECT 1 FROM jobs j WHERE j.media_id = m.id AND j.profile_id = p.id AND j.state != 'done');
 
 -- name: ClaimJob :one

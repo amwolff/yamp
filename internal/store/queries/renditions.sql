@@ -21,6 +21,10 @@ SELECT id, path FROM renditions WHERE media_id = ? AND profile_id = ? AND id != 
 -- name: DeleteRendition :exec
 DELETE FROM renditions WHERE id = ?;
 
+-- An empty params_hash marks a rendition stale; AutoEnqueue replaces it.
+-- name: MarkRenditionsStale :exec
+UPDATE renditions SET params_hash = '' WHERE media_id = ?;
+
 -- name: ListAllRenditions :many
 SELECT id, media_id, profile_id, path, size FROM renditions;
 

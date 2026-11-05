@@ -140,11 +140,16 @@ func (ts *testServer) addMedia(t *testing.T, n int, title string) db.Medium {
 	now := time.Now().Unix() + int64(n)
 	id, err := ts.st.InsertMedia(ctx, db.InsertMediaParams{
 		Path: path, Root: ts.lib, RelDir: "Secret Folder", Title: title, Size: 1000, MtimeNs: 1,
-		Fingerprint: fp, Pid: privacy.PID(ts.sets.Salt(), fp), DurationMs: 120_000, Container: "mp4",
-		Width: 1280, Height: 720, VideoCodec: "h264", AudioCodec: "aac", Mime: "video/mp4",
-		Codecs: "avc1.64001F, mp4a.40.2", Playability: "direct", ProbeJson: "{}", AddedAt: now, UpdatedAt: now,
+		Fingerprint: fp, Pid: privacy.PID(ts.sets.Salt(), fp), DurationMs: 120_000, ProbeJson: "{}",
+		AddedAt: now, UpdatedAt: now,
 	})
 	if err != nil {
+		t.Fatal(err)
+	}
+	if err = ts.st.SetMediaInfo(ctx, db.SetMediaInfoParams{
+		Container: "mp4", Width: 1280, Height: 720, VideoCodec: "h264", AudioCodec: "aac", Mime: "video/mp4",
+		Codecs: "avc1.64001F, mp4a.40.2", Playability: "direct", ID: id,
+	}); err != nil {
 		t.Fatal(err)
 	}
 	m, err := ts.st.GetMedia(ctx, id)

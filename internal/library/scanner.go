@@ -279,6 +279,9 @@ func (s *Scanner) scanFile(ctx context.Context, f file, salt string,
 				return err
 			}
 		}
+		if err := s.refresh(ctx, row.ID); err != nil {
+			return err
+		}
 		if row.HasThumb == 0 {
 			return s.thumbnailFor(ctx, row.ID)
 		}
@@ -314,54 +317,53 @@ func (s *Scanner) scanFile(ctx context.Context, f file, salt string,
 	if err != nil {
 		return err
 	}
-	moovFirst := false
-	if c := probe.ContainerOf(res, f.path); c == probe.ContainerMP4 || c == probe.ContainerMOV {
-		if moovFirst, err = moovFirstFile(f.path); err != nil {
-			return err
-		}
-	}
-	a, err := probe.Classify(res, f.path, moovFirst)
+	mi, err := info(res, f.path)
 	if err != nil {
 		return err
-	}
-	audioCodec := ""
-	if a.Audio != nil {
-		audioCodec = a.Audio.CodecName
 	}
 	pid := privacy.PID(salt, fp)
-	w, h := a.Video.DisplaySize()
-	var id int64
 	if known {
 		// The content at this path changed: drop the old derived files.
-		id = row.ID
-		if err = s.dropDerived(ctx, id); err != nil {
+		mi.ID = row.ID
+		if err = s.dropDerived(ctx, mi.ID); err != nil {
 			return err
 		}
-		err = s.cfg.Store.UpdateMediaContent(ctx, db.UpdateMediaContentParams{
-			Path: f.path, Root: f.root, RelDir: f.relDir, Title: Title(f.path), Size: f.size, MtimeNs: f.mtime,
-			Fingerprint: fp, Pid: pid, DurationMs: res.Duration().Milliseconds(), Container: a.Container,
-			Width: int64(w), Height: int64(h), VideoCodec: a.Video.CodecName,
-			AudioCodec: audioCodec, Mime: a.Mime, Codecs: a.Codecs, Hdr: boolInt(a.HDR),
-			Playability: string(a.Class), ProbeJson: string(raw), UpdatedAt: now, ID: id,
-		})
-		s.update(func(st *Status) { st.Updated++ })
-	} else {
-		id, err = s.cfg.Store.InsertMedia(ctx, db.InsertMediaParams{
-			Path: f.path, Root: f.root, RelDir: f.relDir, Title: Title(f.path), Size: f.size, MtimeNs: f.mtime,
-			Fingerprint: fp, Pid: pid, DurationMs: res.Duration().Milliseconds(), Container: a.Container,
-			Width: int64(w), Height: int64(h), VideoCodec: a.Video.CodecName,
-			AudioCodec: audioCodec, Mime: a.Mime, Codecs: a.Codecs, Hdr: boolInt(a.HDR),
-			Playability: string(a.Class), ProbeJson: string(raw), AddedAt: now, UpdatedAt: now,
-		})
-		s.update(func(st *Status) { st.Added++ })
 	}
+	err = s.cfg.Store.Tx(ctx, func(q *db.Queries) error {
+		if known {
+			if updErr := q.UpdateMediaContent(ctx, db.UpdateMediaContentParams{
+				Path: f.path, Root: f.root, RelDir: f.relDir, Title: Title(f.path), Size: f.size, MtimeNs: f.mtime,
+				Fingerprint: fp, Pid: pid, DurationMs: res.Duration().Milliseconds(), ProbeJson: string(raw),
+				UpdatedAt: now, ID: mi.ID,
+			}); updErr != nil {
+				return updErr
+			}
+		} else {
+			var insErr error
+			mi.ID, insErr = q.InsertMedia(ctx, db.InsertMediaParams{
+				Path: f.path, Root: f.root, RelDir: f.relDir, Title: Title(f.path), Size: f.size, MtimeNs: f.mtime,
+				Fingerprint: fp, Pid: pid, DurationMs: res.Duration().Milliseconds(), ProbeJson: string(raw),
+				AddedAt: now, UpdatedAt: now,
+			})
+			if insErr != nil {
+				return insErr
+			}
+		}
+		return q.SetMediaInfo(ctx, mi)
+	})
 	if err != nil {
 		return err
 	}
+	if known {
+		s.update(func(st *Status) { st.Updated++ })
+	} else {
+		s.update(func(st *Status) { st.Added++ })
+	}
+	id := mi.ID
 	seen[id] = true
 	byFP[hex.EncodeToString(fp)] = db.ListMediaForScanRow{ID: id, Path: f.path, Fingerprint: fp, Status: "ok"}
 
-	if err := s.thumbnail(ctx, id, f.path, a.Video, res.Duration()); err != nil {
+	if err := s.thumbnail(ctx, id, f.path, res.Video(), res.Duration()); err != nil {
 		s.issue("%s: thumbnail: %v", f.path, err)
 	}
 	if err := s.subtitles(ctx, id, f.path, res); err != nil {
@@ -390,6 +392,39 @@ func (s *Scanner) dropDerived(ctx context.Context, id int64) error {
 	return s.cfg.Store.DeleteSubtitles(ctx, id)
 }
 
+// refresh derives the fields of an unchanged file again, so that code changes
+// reach the whole library. If any field differs, it saves them and marks the
+// renditions stale, and AutoEnqueue makes them again.
+func (s *Scanner) refresh(ctx context.Context, id int64) error {
+	m, err := s.cfg.Store.GetMedia(ctx, id)
+	if err != nil {
+		return err
+	}
+	res, err := probe.Parse([]byte(m.ProbeJson))
+	if err != nil {
+		return err
+	}
+	want, err := info(res, m.Path)
+	if err != nil {
+		return err
+	}
+	want.ID = id
+	stored, err := s.cfg.Store.GetMediaInfo(ctx, id)
+	if err != nil {
+		return err
+	}
+	if db.SetMediaInfoParams(stored) == want {
+		return nil
+	}
+	s.cfg.Log.Info("media info changed", "media", m.Pid)
+	return s.cfg.Store.Tx(ctx, func(q *db.Queries) error {
+		if markErr := q.MarkRenditionsStale(ctx, id); markErr != nil {
+			return markErr
+		}
+		return q.SetMediaInfo(ctx, want)
+	})
+}
+
 func (s *Scanner) thumbnailFor(ctx context.Context, id int64) error {
 	m, err := s.cfg.Store.GetMedia(ctx, id)
 	if err != nil {
@@ -404,6 +439,32 @@ func (s *Scanner) thumbnailFor(ctx context.Context, id int64) error {
 		return probe.ErrNoVideo
 	}
 	return s.thumbnail(ctx, id, m.Path, v, res.Duration())
+}
+
+// info derives the fields that SetMediaInfo saves. The duration is not one of
+// them: a transcode replaces it with the measured one, and comparing it would
+// mark the renditions stale at every scan.
+func info(res *probe.Result, path string) (db.SetMediaInfoParams, error) {
+	moovFirst := false
+	if c := probe.ContainerOf(res, path); c == probe.ContainerMP4 || c == probe.ContainerMOV {
+		var err error
+		if moovFirst, err = moovFirstFile(path); err != nil {
+			return db.SetMediaInfoParams{}, err
+		}
+	}
+	a, err := probe.Classify(res, path, moovFirst)
+	if err != nil {
+		return db.SetMediaInfoParams{}, err
+	}
+	audioCodec := ""
+	if a.Audio != nil {
+		audioCodec = a.Audio.CodecName
+	}
+	w, h := a.Video.DisplaySize()
+	return db.SetMediaInfoParams{
+		Container: a.Container, Width: int64(w), Height: int64(h), VideoCodec: a.Video.CodecName,
+		AudioCodec: audioCodec, Mime: a.Mime, Codecs: a.Codecs, Hdr: boolInt(a.HDR), Playability: string(a.Class),
+	}, nil
 }
 
 func moovFirstFile(path string) (bool, error) {
