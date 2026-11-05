@@ -302,6 +302,51 @@ func TestGridPagingAndFolders(t *testing.T) {
 	}
 }
 
+func TestJobsPaging(t *testing.T) {
+	ts := newTestServer(t)
+	ts.setup(t)
+	ctx := context.Background()
+	profiles, err := ts.st.ListProfiles(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	total := 0
+	for i := 0; total <= jobsPageSize; i++ {
+		m := ts.addMedia(t, i, fmt.Sprintf("Video %02d", i))
+		for _, p := range profiles {
+			if _, err := ts.st.EnqueueJob(ctx, db.EnqueueJobParams{MediaID: m.ID, ProfileID: p.ID, CreatedAt: 1}); err != nil {
+				t.Fatal(err)
+			}
+			total++
+		}
+	}
+	cancelRe := regexp.MustCompile(`action="/admin/jobs/(\d+)/cancel"`)
+	seen := map[string]bool{}
+	for page, want := range map[string]struct {
+		body, pager string
+		rows        int
+	}{
+		"/admin/jobs":                  {`hx-get="/admin/jobs/table?page=1"`, `Page 1 of 2`, jobsPageSize},
+		"/admin/jobs/table?page=2":     {`value="/admin/jobs?page=2"`, `href="/admin/jobs?page=1"`, total - jobsPageSize},
+		"/admin/jobs/table?page=9":     {`value="/admin/jobs?page=2"`, `Page 2 of 2`, total - jobsPageSize},
+		"/admin/jobs/table?page=other": {`value="/admin/jobs?page=1"`, `href="/admin/jobs?page=2"`, jobsPageSize},
+	} {
+		_, body := ts.do(t, "GET", page, nil)
+		ids := cancelRe.FindAllStringSubmatch(body, -1)
+		if len(ids) != want.rows || !strings.Contains(body, want.body) || !strings.Contains(body, want.pager) {
+			t.Fatalf("%s: %d rows, want %d, %q and %q", page, len(ids), want.rows, want.body, want.pager)
+		}
+		if page == "/admin/jobs" || page == "/admin/jobs/table?page=2" {
+			for _, id := range ids {
+				seen[id[1]] = true
+			}
+		}
+	}
+	if len(seen) != total {
+		t.Fatalf("the pages show %d of %d jobs", len(seen), total)
+	}
+}
+
 func TestPlaybackStats(t *testing.T) {
 	ts := newTestServer(t)
 	ts.setup(t)

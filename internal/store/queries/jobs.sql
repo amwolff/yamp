@@ -51,7 +51,7 @@ JOIN profiles p ON p.id = j.profile_id
 ORDER BY CASE j.state WHEN 'running' THEN 0 WHEN 'queued' THEN 1 ELSE 2 END,
     CASE WHEN j.state = 'queued' THEN -j.priority ELSE 0 END,
     CASE WHEN j.state IN ('running', 'queued') THEN j.id ELSE -j.id END
-LIMIT ?;
+LIMIT ? OFFSET ?;
 
 -- name: ListJobsForMedia :many
 SELECT j.*, p.name AS profile_name

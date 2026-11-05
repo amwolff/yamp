@@ -138,7 +138,7 @@ img { display: block; max-width: 100%; }
   border: 1px solid transparent; background: var(--accent-strong); color: #fff;
   font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap;
 }
-.btn:hover { filter: brightness(1.08); }
+.btn:hover { filter: brightness(1.08); text-decoration: none; }
 .btn-ghost { background: var(--surface-2); color: var(--text); border-color: var(--border); }
 .btn-danger { background: transparent; color: var(--danger); border-color: color-mix(in srgb, var(--danger) 50%, var(--border)); }
 .btn-small { min-height: 30px; padding: 0 10px; font-size: .85em; }
@@ -358,6 +358,7 @@ progress.resume::-moz-progress-bar { background: #ff4d4d; border-radius: 0; }
 .table th, .table td { padding: 9px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
 .table tr:last-child td { border-bottom: 0; }
 .table.compact td { padding: 6px 8px; }
+.pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 12px; }
 .table form { margin: 0; }
 .table a.name { font-weight: 550; overflow-wrap: anywhere; }
 .table .col-name { min-width: 150px; }

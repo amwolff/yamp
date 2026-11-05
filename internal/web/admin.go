@@ -264,44 +264,72 @@ func (s *Server) handleAutoEnqueue(w http.ResponseWriter, r *http.Request) {
 
 // ---- Jobs ----
 
+const jobsPageSize = 50
+
 type jobRow struct {
 	db.ListJobsRow
 	Live   *transcode.Live
 	Active bool
 }
 
-func (s *Server) jobRows(ctx context.Context) ([]jobRow, error) {
-	jobs, err := s.Store.ListJobs(ctx, 200)
+type jobsData struct {
+	Rows []jobRow
+	// Page counts from 1. Prev and Next are 0 if there is no such page.
+	Page, Pages, Prev, Next int
+}
+
+// jobsPage reads the page that the "page" parameter selects. A page past the
+// end shows the last page.
+func (s *Server) jobsPage(r *http.Request) (jobsData, error) {
+	ctx := r.Context()
+	counts, err := s.Store.CountJobsByState(ctx)
 	if err != nil {
-		return nil, err
+		return jobsData{}, err
 	}
-	rows := make([]jobRow, 0, len(jobs))
+	var total int
+	for _, c := range counts {
+		total += int(c.N)
+	}
+	d := jobsData{Pages: max(1, (total+jobsPageSize-1)/jobsPageSize)}
+	d.Page, _ = strconv.Atoi(r.URL.Query().Get("page"))
+	d.Page = min(max(d.Page, 1), d.Pages)
+	if d.Page > 1 {
+		d.Prev = d.Page - 1
+	}
+	if d.Page < d.Pages {
+		d.Next = d.Page + 1
+	}
+	jobs, err := s.Store.ListJobs(ctx, db.ListJobsParams{Limit: jobsPageSize, Offset: int64((d.Page - 1) * jobsPageSize)})
+	if err != nil {
+		return jobsData{}, err
+	}
+	d.Rows = make([]jobRow, 0, len(jobs))
 	for _, j := range jobs {
 		jr := jobRow{ListJobsRow: j, Active: j.State == transcode.StateQueued || j.State == transcode.StateRunning}
 		if live, ok := s.Queue.Live(j.ID); ok {
 			jr.Live = &live
 		}
-		rows = append(rows, jr)
+		d.Rows = append(d.Rows, jr)
 	}
-	return rows, nil
+	return d, nil
 }
 
 func (s *Server) handleAdminJobs(w http.ResponseWriter, r *http.Request) {
-	rows, err := s.jobRows(r.Context())
+	d, err := s.jobsPage(r)
 	if err != nil {
 		s.serverError(w, r, err)
 		return
 	}
-	s.render(w, r, http.StatusOK, "admin_jobs", s.newPage(r, "Admin - YAMP", "jobs", rows))
+	s.render(w, r, http.StatusOK, "admin_jobs", s.newPage(r, "Admin - YAMP", "jobs", d))
 }
 
 func (s *Server) handleJobsTable(w http.ResponseWriter, r *http.Request) {
-	rows, err := s.jobRows(r.Context())
+	d, err := s.jobsPage(r)
 	if err != nil {
 		s.serverError(w, r, err)
 		return
 	}
-	s.renderTemplate(w, r, http.StatusOK, "admin_jobs", "jobs-table", rows)
+	s.renderTemplate(w, r, http.StatusOK, "admin_jobs", "jobs-table", d)
 }
 
 func (s *Server) handleJobCancel(w http.ResponseWriter, r *http.Request) {

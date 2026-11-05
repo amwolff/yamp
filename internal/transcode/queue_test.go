@@ -135,7 +135,7 @@ func TestQueueEndToEnd(t *testing.T) {
 
 	apple := e.profile(t, "High quality HEVC (Apple)")
 	compat := e.profile(t, "Compatible 1080p H.264")
-	jobs, err := e.st.ListJobs(ctx, 100)
+	jobs, err := e.st.ListJobs(ctx, db.ListJobsParams{Limit: 100})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -368,7 +368,7 @@ func TestQueueCancel(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Remove the queued automatic jobs; the test queues its own slow job.
-	jobs, _ := e.st.ListJobs(ctx, 100)
+	jobs, _ := e.st.ListJobs(ctx, db.ListJobsParams{Limit: 100})
 	for _, j := range jobs {
 		if err := e.queue.Cancel(ctx, j.ID); err != nil {
 			t.Fatal(err)

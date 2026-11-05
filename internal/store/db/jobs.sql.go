@@ -195,8 +195,13 @@ JOIN profiles p ON p.id = j.profile_id
 ORDER BY CASE j.state WHEN 'running' THEN 0 WHEN 'queued' THEN 1 ELSE 2 END,
     CASE WHEN j.state = 'queued' THEN -j.priority ELSE 0 END,
     CASE WHEN j.state IN ('running', 'queued') THEN j.id ELSE -j.id END
-LIMIT ?
+LIMIT ? OFFSET ?
 `
+
+type ListJobsParams struct {
+	Limit  int64
+	Offset int64
+}
 
 type ListJobsRow struct {
 	ID          int64
@@ -214,8 +219,8 @@ type ListJobsRow struct {
 	ProfileName string
 }
 
-func (q *Queries) ListJobs(ctx context.Context, limit int64) ([]ListJobsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listJobs, limit)
+func (q *Queries) ListJobs(ctx context.Context, arg ListJobsParams) ([]ListJobsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listJobs, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
