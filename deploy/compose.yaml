@@ -1,6 +1,7 @@
 # YAMP on a Linux host with an Intel iGPU, behind `tailscale serve`.
 #
-#   RENDER_GID=$(getent group render | cut -d: -f3) docker compose -f deploy/compose.yaml up -d --build
+#   docker compose -f deploy/compose.yaml build --pull
+#   RENDER_GID=$(getent group render | cut -d: -f3) docker compose -f deploy/compose.yaml up -d
 #   tailscale serve --bg 8080
 #
 # Change the three host paths below. The library is mounted read-only.

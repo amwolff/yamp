@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 # Build from the repository root:
-#   docker buildx build --platform linux/amd64 -f deploy/Dockerfile -t yamp .
+#   docker buildx build --pull --platform linux/amd64 -f deploy/Dockerfile -t yamp .
 
-FROM --platform=$BUILDPLATFORM golang:1.27-trixie AS build
+FROM --platform=$BUILDPLATFORM golang:trixie AS build
 ARG TARGETOS TARGETARCH
 WORKDIR /src
 COPY go.mod go.sum ./
