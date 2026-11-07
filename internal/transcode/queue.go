@@ -481,7 +481,8 @@ func estimateSize(m db.Medium, p Params, plan Plan) int64 {
 	case plan.CopyVideo:
 		est = m.Size
 	case p.MaxBitrateK > 0:
-		est = int64(p.MaxBitrateK+p.AudioBitrateK) * 1000 / 8 * seconds
+		// The probed duration can be wrong; the source size bounds the guess.
+		est = min(int64(p.MaxBitrateK+p.AudioBitrateK)*1000/8*seconds, 4*m.Size)
 	default:
 		est = min(m.Size, 12_000_000/8*seconds)
 	}

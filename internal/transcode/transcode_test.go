@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/amwolff/yamp/internal/probe"
+	"github.com/amwolff/yamp/internal/store/db"
 )
 
 func TestPresetsValid(t *testing.T) {
@@ -439,6 +440,29 @@ func TestDetect(t *testing.T) {
 	}
 	if _, err := c.Resolve("h264", "h264_qsv"); err == nil {
 		t.Fatal("unavailable encoder resolved")
+	}
+}
+
+func TestEstimateSize(t *testing.T) {
+	short := db.Medium{Size: 1_000_000, DurationMs: 2_000}
+	long := db.Medium{Size: 1_000_000, DurationMs: 1_000_000_000}
+	capped := Params{MaxBitrateK: 900, AudioBitrateK: 100}
+	tests := []struct {
+		name string
+		m    db.Medium
+		p    Params
+		plan Plan
+		want int64
+	}{
+		{"copy", short, capped, Plan{CopyVideo: true}, 2_000_000},
+		{"bitrate cap", short, capped, Plan{}, 500_000},
+		{"broken duration", long, capped, Plan{}, 8_000_000},
+		{"no cap", short, Params{}, Plan{}, 2_000_000},
+	}
+	for _, tt := range tests {
+		if got := estimateSize(tt.m, tt.p, tt.plan); got != tt.want {
+			t.Errorf("%s: estimateSize = %d, want %d", tt.name, got, tt.want)
+		}
 	}
 }
 
